@@ -1,18 +1,18 @@
 package deep
 
-public class DeepStringFormatter private constructor(private val indentation: String?) {
-    public operator fun invoke(value: DeepString<*>?): String = buildString { appendValue(value, 0) }
+public class DeepFormatter private constructor(private val indentation: String?) {
+    public operator fun invoke(value: Deep<*>?): String = buildString { appendValue(value, 0) }
 
-    private fun StringBuilder.appendValue(value: DeepString<*>?, level: Int) {
+    private fun StringBuilder.appendValue(value: Deep<*>?, level: Int) {
         when (value) {
             null -> append('/')
-            is DeepStringValue -> encode(value.value)
-            is DeepStringList -> appendList(value, level)
-            is DeepStringMap -> appendMap(value, level)
+            is DeepString -> encode(value.value)
+            is DeepList -> appendList(value, level)
+            is DeepMap -> appendMap(value, level)
         }
     }
 
-    private fun StringBuilder.appendList(value: DeepStringList, level: Int) {
+    private fun StringBuilder.appendList(value: DeepList, level: Int) {
         val list = value.value
         append('[')
         when (list.size) {
@@ -34,7 +34,7 @@ public class DeepStringFormatter private constructor(private val indentation: St
         append(']')
     }
 
-    private fun StringBuilder.appendMap(value: DeepStringMap, level: Int) {
+    private fun StringBuilder.appendMap(value: DeepMap, level: Int) {
         val map = value.value
         append('{')
         when (map.size) {
@@ -55,7 +55,7 @@ public class DeepStringFormatter private constructor(private val indentation: St
         append('}')
     }
 
-    private fun StringBuilder.appendEntry(entry: Map.Entry<String, DeepString<*>?>, level: Int) {
+    private fun StringBuilder.appendEntry(entry: Map.Entry<String, Deep<*>?>, level: Int) {
         encode(entry.key)
         append(':')
         if (indentation != null) append(' ')
@@ -68,9 +68,9 @@ public class DeepStringFormatter private constructor(private val indentation: St
     }
 
     public companion object {
-        public val TABS: DeepStringFormatter = DeepStringFormatter("\t")
-        public val MINIFIED: DeepStringFormatter = DeepStringFormatter(null)
-        public val SPACES: DeepStringFormatter = DeepStringFormatter("  ")
+        public val TABS: DeepFormatter = DeepFormatter("\t")
+        public val MINIFIED: DeepFormatter = DeepFormatter(null)
+        public val SPACES: DeepFormatter = DeepFormatter("  ")
 
         private const val HEX_CHARS = "0123456789abcdef"
         private fun StringBuilder.encode(string: String) {

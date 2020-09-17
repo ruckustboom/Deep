@@ -2,8 +2,8 @@ package deep
 
 import java.io.Reader
 
-public class DeepStringParser : Parser<DeepString<*>?>() {
-    override fun parse(): DeepString<*>? {
+public class DeepParser : Parser<Deep<*>?>() {
+    override fun parse(): Deep<*>? {
         skipWhitespace()
         val result = readValue()
         skipWhitespace()
@@ -11,7 +11,7 @@ public class DeepStringParser : Parser<DeepString<*>?>() {
     }
 
     private fun readValue() = when (currentChar) {
-        '"', '\'' -> DeepStringValue(readString())
+        '"', '\'' -> DeepString(readString())
         '[' -> readList()
         '{' -> readMap()
         '!', '-', '/', '*', 'X', 'x', '~' -> {
@@ -21,16 +21,16 @@ public class DeepStringParser : Parser<DeepString<*>?>() {
         else -> crash("Invalid character")
     }
 
-    private fun readList(): DeepStringList {
-        val list = mutableListOf<DeepString<*>?>()
+    private fun readList(): DeepList {
+        val list = mutableListOf<Deep<*>?>()
         readCollection(']') {
             list += readValue()
         }
-        return DeepStringList(list)
+        return DeepList(list)
     }
 
-    private fun readMap(): DeepStringMap {
-        val map = mutableMapOf<String, DeepString<*>?>()
+    private fun readMap(): DeepMap {
+        val map = mutableMapOf<String, Deep<*>?>()
         readCollection('}') {
             val key = readString()
             skipWhitespace()
@@ -38,7 +38,7 @@ public class DeepStringParser : Parser<DeepString<*>?>() {
             skipWhitespace()
             map[key] = readValue()
         }
-        return DeepStringMap(map)
+        return DeepMap(map)
     }
 
     private fun readString(): String {
@@ -97,12 +97,12 @@ public class DeepStringParser : Parser<DeepString<*>?>() {
     public companion object {
         private const val WHITESPACE = " \t\n\r"
 
-        public fun parse(string: String): DeepString<*>? = DeepStringParser().parse(string)
-        public fun parse(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): DeepString<*>? =
-            DeepStringParser().parse(reader, bufferSize)
+        public fun parse(string: String): Deep<*>? = DeepParser().parse(string)
+        public fun parse(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): Deep<*>? =
+            DeepParser().parse(reader, bufferSize)
 
-        public operator fun invoke(string: String): DeepString<*>? = parse(string)
-        public operator fun invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): DeepString<*>? =
+        public operator fun invoke(string: String): Deep<*>? = parse(string)
+        public operator fun invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): Deep<*>? =
             parse(reader, bufferSize)
 
         private fun Char.isHexDigit() = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'

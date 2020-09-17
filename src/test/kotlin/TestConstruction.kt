@@ -1,21 +1,23 @@
 package deep
 
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class TestConstruction {
     @Test
     fun testDeepFunction() {
-        Assertions.assertEquals(DeepStringValue("Fred"), deep("Fred"))
+        Assertions.assertEquals(DeepString("Fred"), deep("Fred"))
         Assertions.assertEquals(
-            DeepStringList(listOf(DeepStringValue("Fred"), DeepStringValue("true"))),
+            DeepList(listOf(DeepString("Fred"), DeepString("true"))),
             deep("Fred", true),
         )
         Assertions.assertEquals(
-            DeepStringMap(
+            DeepMap(
                 mapOf(
-                    "fred" to DeepStringValue("Fred"),
-                    "bool" to DeepStringValue("true"),
+                    "fred" to DeepString("Fred"),
+                    "bool" to DeepString("true"),
                 )
             ),
             deep("fred" to "Fred", "bool" to true),
@@ -58,5 +60,29 @@ class TestConstruction {
         map["list"] shouldBe emptyList<Nothing>()
         map["map"] shouldBe emptyMap<Nothing, Nothing>()
         map["other"] shouldBe null
+    }
+
+    @Test
+    fun testAccessors() {
+        val n = deep(null)
+        val string = deep("a")
+        val list = deep("a", "b")
+        val map = deep("a" to "a")
+
+        assertNull(n.string)
+        assertNull(n.list)
+        assertNull(n.map)
+
+        assertNotNull(string.string)
+        assertNull(string.list)
+        assertNull(string.map)
+
+        assertNull(list.string)
+        assertNotNull(list.list)
+        assertNull(list.map)
+
+        assertNull(map.string)
+        assertNull(map.list)
+        assertNotNull(map.map)
     }
 }

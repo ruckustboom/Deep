@@ -2,15 +2,15 @@ package deep
 
 import org.junit.jupiter.api.Assertions.*
 
-infix fun String.shouldBe(expected: Any?) = DeepStringParser(this) shouldBe expected
-infix fun DeepString<*>?.shouldBe(expected: Any?) {
+infix fun String.shouldBe(expected: Any?) = DeepParser(this) shouldBe expected
+infix fun Deep<*>?.shouldBe(expected: Any?) {
     when (this) {
         null -> assertNull(expected)
-        is DeepStringValue -> {
+        is DeepString -> {
             assertTrue(expected is String)
             assertEquals(expected as String, value)
         }
-        is DeepStringList -> {
+        is DeepList -> {
             assertTrue(expected is List<*>)
             expected as List<*>
             assertEquals(expected.size, value.size)
@@ -18,7 +18,7 @@ infix fun DeepString<*>?.shouldBe(expected: Any?) {
                 value[index] shouldBe innerExpected
             }
         }
-        is DeepStringMap -> {
+        is DeepMap -> {
             assertTrue(expected is Map<*, *>)
             expected as Map<*, *>
             assertEquals(expected.keys, value.keys)
@@ -37,7 +37,7 @@ fun String.shouldFail(offset: Int, description: String, character: Char) =
     shouldFail(offset, 0, offset, description, character)
 
 fun String.shouldFail(offset: Int, line: Int, column: Int, description: String, character: Char) = try {
-    DeepStringParser(this)
+    DeepParser(this)
     fail<Nothing>("Input parsed successfully")
 } catch (e: ParseException) {
     assertEquals(offset, e.location.offset)

@@ -53,7 +53,7 @@ class TestFormatting {
               }]
             }
             """.trimIndent().ignoreNewline(),
-            DeepStringFormatter.SPACES(value).ignoreNewline()
+            DeepFormatter.SPACES(value).ignoreNewline()
         )
         assertEquals(
             """{"null":/,"boolean":"true","integer":"5","decimal":"NaN","string":"fred",""" +
@@ -63,7 +63,7 @@ class TestFormatting {
                     """"multi-map":{"alice":"27.0","bob":"43.5","charlie":"35.9"},""" +
                     """"map-of-list":{"list":["one","two"]},""" +
                     """"list-of-map":[{"one":"1","two":"2"}]}""",
-            DeepStringFormatter.MINIFIED(value)
+            DeepFormatter.MINIFIED(value)
         )
     }
 }
