@@ -39,7 +39,7 @@ public class DeepStringValue(value: String) : DeepString<String>(value)
 public fun deep(value: Any?): DeepString<*>? = when (value) {
     null -> null
     is DeepString<*> -> value
-    is Collection<*> -> DeepStringList(value.map(::deep))
+    is Iterable<*> -> DeepStringList(value.map(::deep))
     is Array<*> -> DeepStringList(value.map(::deep))
     is BooleanArray -> DeepStringList(value.map(::deep))
     is ByteArray -> DeepStringList(value.map(::deep))
@@ -65,10 +65,10 @@ public fun deep(vararg entries: Pair<*, *>): DeepStringMap =
 public fun deep(vararg values: Any?): DeepStringList = DeepStringList(values.map(::deep))
 
 @JvmSynthetic
-public operator fun DeepString<*>?.get(index: Int): DeepString<*>? = (this as? DeepStringList)?.value?.getOrNull(index)
+public operator fun DeepString<*>?.get(index: Int): DeepString<*>? = list?.getOrNull(index)
 
 @JvmSynthetic
-public operator fun DeepString<*>?.get(key: String): DeepString<*>? = (this as? DeepStringMap)?.value?.get(key)
+public operator fun DeepString<*>?.get(key: String): DeepString<*>? = map?.get(key)
 
 @JvmSynthetic
 public operator fun DeepString<*>?.contains(key: String): Boolean = this is DeepStringMap && key in value
