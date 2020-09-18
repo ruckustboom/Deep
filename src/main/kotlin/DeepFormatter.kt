@@ -1,16 +1,18 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package deep
 
 import java.io.StringWriter
 import java.io.Writer
 
 public class DeepFormatter private constructor(private val indentation: String?) {
-    public operator fun invoke(value: Deep<*>?): String {
+    public fun format(value: Deep<*>?): String {
         val writer = StringWriter()
-        writer.use { invoke(value, it) }
+        writer.use { format(value, it) }
         return writer.toString()
     }
 
-    public operator fun invoke(value: Deep<*>?, writer: Writer) {
+    public fun format(value: Deep<*>?, writer: Writer) {
         writer.appendValue(value, 0)
     }
 
@@ -74,8 +76,7 @@ public class DeepFormatter private constructor(private val indentation: String?)
     }
 
     private fun Writer.appendIndent(level: Int) {
-        if (indentation == null) return
-        repeat(level) { write(indentation) }
+        if (indentation != null) repeat(level) { write(indentation) }
     }
 
     public companion object {
@@ -106,3 +107,13 @@ public class DeepFormatter private constructor(private val indentation: String?)
         }
     }
 }
+
+@JvmSynthetic
+public inline operator fun DeepFormatter.invoke(value: Deep<*>?): String = format(value)
+
+@JvmSynthetic
+public inline operator fun DeepFormatter.invoke(value: Deep<*>?, writer: Writer): Unit = format(value, writer)
+
+@JvmSynthetic
+public inline fun Writer.write(value: Deep<*>, formatter: DeepFormatter = DeepFormatter.MINIFIED): Unit =
+    formatter.format(value, this)

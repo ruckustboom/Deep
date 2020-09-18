@@ -97,14 +97,20 @@ public class DeepParser : Parser<Deep<*>?>() {
     public companion object {
         private const val WHITESPACE = " \t\n\r"
 
+        @JvmStatic
         public fun parse(string: String): Deep<*>? = DeepParser().parse(string)
+
+        @JvmStatic
         public fun parse(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): Deep<*>? =
             DeepParser().parse(reader, bufferSize)
-
-        public operator fun invoke(string: String): Deep<*>? = parse(string)
-        public operator fun invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): Deep<*>? =
-            parse(reader, bufferSize)
 
         private fun Char.isHexDigit() = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
     }
 }
+
+@JvmSynthetic
+public operator fun DeepParser.Companion.invoke(string: String): Deep<*>? = parse(string)
+
+@JvmSynthetic
+public operator fun DeepParser.Companion.invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): Deep<*>? =
+    parse(reader, bufferSize)
