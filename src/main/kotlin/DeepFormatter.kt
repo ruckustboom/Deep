@@ -6,12 +6,6 @@ import java.io.StringWriter
 import java.io.Writer
 
 public class DeepFormatter private constructor(private val indentation: String?) {
-    public fun format(value: Deep<*>?): String {
-        val writer = StringWriter()
-        writer.use { format(value, it) }
-        return writer.toString()
-    }
-
     public fun format(value: Deep<*>?, writer: Writer) {
         writer.appendValue(value, 0)
     }
@@ -84,6 +78,8 @@ public class DeepFormatter private constructor(private val indentation: String?)
         public val MINIFIED: DeepFormatter = DeepFormatter(null)
         public val SPACES: DeepFormatter = DeepFormatter("  ")
 
+        public fun toString(value: Deep<*>?, formatter: DeepFormatter): String = formatter.toString(value)
+
         private const val HEX_CHARS = "0123456789abcdef"
         private fun Writer.encode(string: String) {
             append('"')
@@ -109,11 +105,18 @@ public class DeepFormatter private constructor(private val indentation: String?)
 }
 
 @JvmSynthetic
-public inline operator fun DeepFormatter.invoke(value: Deep<*>?): String = format(value)
+public inline fun DeepFormatter.toString(value: Deep<*>?): String {
+    val writer = StringWriter()
+    writer.use { format(value, it) }
+    return writer.toString()
+}
+
+@JvmSynthetic
+public inline operator fun DeepFormatter.invoke(value: Deep<*>?): String = toString(value)
 
 @JvmSynthetic
 public inline operator fun DeepFormatter.invoke(value: Deep<*>?, writer: Writer): Unit = format(value, writer)
 
 @JvmSynthetic
-public inline fun Writer.write(value: Deep<*>, formatter: DeepFormatter = DeepFormatter.MINIFIED): Unit =
+public inline fun Writer.write(value: Deep<*>?, formatter: DeepFormatter = DeepFormatter.MINIFIED): Unit =
     formatter.format(value, this)
