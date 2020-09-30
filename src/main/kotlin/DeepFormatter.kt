@@ -1,9 +1,16 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package deep
 
-public class DeepFormatter private constructor(private val indentation: String?) {
-    public operator fun invoke(value: Deep<*>?): String = buildString { appendValue(value, 0) }
+import java.io.StringWriter
+import java.io.Writer
 
-    private fun StringBuilder.appendValue(value: Deep<*>?, level: Int) {
+public class DeepFormatter private constructor(private val indentation: String?) {
+    public fun format(value: Deep<*>?, writer: Writer) {
+        writer.appendValue(value, 0)
+    }
+
+    private fun Writer.appendValue(value: Deep<*>?, level: Int) {
         when (value) {
             null -> append('/')
             is DeepString -> encode(value.value)
@@ -12,7 +19,7 @@ public class DeepFormatter private constructor(private val indentation: String?)
         }
     }
 
-    private fun StringBuilder.appendList(value: DeepList, level: Int) {
+    private fun Writer.appendList(value: DeepList, level: Int) {
         val list = value.value
         append('[')
         when (list.size) {
@@ -34,7 +41,7 @@ public class DeepFormatter private constructor(private val indentation: String?)
         append(']')
     }
 
-    private fun StringBuilder.appendMap(value: DeepMap, level: Int) {
+    private fun Writer.appendMap(value: DeepMap, level: Int) {
         val map = value.value
         append('{')
         when (map.size) {
@@ -55,16 +62,15 @@ public class DeepFormatter private constructor(private val indentation: String?)
         append('}')
     }
 
-    private fun StringBuilder.appendEntry(entry: Map.Entry<String, Deep<*>?>, level: Int) {
+    private fun Writer.appendEntry(entry: Map.Entry<String, Deep<*>?>, level: Int) {
         encode(entry.key)
         append(':')
         if (indentation != null) append(' ')
         appendValue(entry.value, level)
     }
 
-    private fun StringBuilder.appendIndent(level: Int) {
-        if (indentation == null) return
-        repeat(level) { append(indentation) }
+    private fun Writer.appendIndent(level: Int) {
+        if (indentation != null) repeat(level) { write(indentation) }
     }
 
     public companion object {
@@ -72,18 +78,20 @@ public class DeepFormatter private constructor(private val indentation: String?)
         public val MINIFIED: DeepFormatter = DeepFormatter(null)
         public val SPACES: DeepFormatter = DeepFormatter("  ")
 
+        public fun toString(value: Deep<*>?, formatter: DeepFormatter): String = formatter.toString(value)
+
         private const val HEX_CHARS = "0123456789abcdef"
-        private fun StringBuilder.encode(string: String) {
+        private fun Writer.encode(string: String) {
             append('"')
             for (char in string) {
                 when {
-                    char == '\\' -> append("\\\\")
-                    char == '"' -> append("\\\"")
-                    char == '\n' -> append("\\n")
-                    char == '\r' -> append("\\r")
-                    char == '\t' -> append("\\t")
+                    char == '\\' -> write("\\\\")
+                    char == '"' -> write("\\\"")
+                    char == '\n' -> write("\\n")
+                    char == '\r' -> write("\\r")
+                    char == '\t' -> write("\\t")
                     char < '\u0020' -> {
-                        append("\\u00")
+                        write("\\u00")
                         val int = char.toInt()
                         append(HEX_CHARS[int shr 4 and 0xf])
                         append(HEX_CHARS[int and 0xf])
@@ -95,3 +103,20 @@ public class DeepFormatter private constructor(private val indentation: String?)
         }
     }
 }
+
+@JvmSynthetic
+public inline fun DeepFormatter.toString(value: Deep<*>?): String {
+    val writer = StringWriter()
+    writer.use { format(value, it) }
+    return writer.toString()
+}
+
+@JvmSynthetic
+public inline operator fun DeepFormatter.invoke(value: Deep<*>?): String = toString(value)
+
+@JvmSynthetic
+public inline operator fun DeepFormatter.invoke(value: Deep<*>?, writer: Writer): Unit = format(value, writer)
+
+@JvmSynthetic
+public inline fun Writer.write(value: Deep<*>?, formatter: DeepFormatter = DeepFormatter.MINIFIED): Unit =
+    formatter.format(value, this)

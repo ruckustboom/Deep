@@ -48,9 +48,6 @@ public abstract class Parser<T> {
         }
     }
 
-    public operator fun invoke(string: String): T = parse(string)
-    public operator fun invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): T = parse(reader, bufferSize)
-
     // Implementation
 
     /**
@@ -113,7 +110,7 @@ public abstract class Parser<T> {
 
     // Helpers
 
-    protected fun getLocation(): Location {
+    private fun getLocation(): Location {
         val offset = bufferStart + bufferHead - 1
         val column = offset - lineStart
         return Location(offset, lineCount, column)
@@ -146,3 +143,10 @@ public class ParseException(
 ) : Exception("$description (found <$character>/${character.toInt()} at $location)", cause)
 
 public data class Location(val offset: Int, val line: Int, val column: Int)
+
+@JvmSynthetic
+public operator fun <T> Parser<T>.invoke(string: String): T = parse(string)
+
+@JvmSynthetic
+public operator fun <T> Parser<T>.invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): T =
+    parse(reader, bufferSize)

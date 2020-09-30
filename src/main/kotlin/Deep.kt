@@ -12,15 +12,6 @@ public sealed class Deep<S : Any>(public val value: S) {
 
     public companion object {
         @JvmStatic
-        public fun deep(value: Any?): Deep<*>? = deep.deep(value)
-
-        @JvmStatic
-        public fun deep(vararg values: Any?): DeepList = deep.deep(*values)
-
-        @JvmStatic
-        public fun deep(vararg entries: Pair<*, *>): DeepMap = deep.deep(*entries)
-
-        @JvmStatic
         public fun get(value: Deep<*>?, index: Int): Deep<*>? = value[index]
 
         @JvmStatic
@@ -31,37 +22,15 @@ public sealed class Deep<S : Any>(public val value: S) {
     }
 }
 
-public class DeepMap(value: Map<String, Deep<*>?>) : Deep<Map<String, Deep<*>?>>(value)
-public class DeepList(value: List<Deep<*>?>) : Deep<List<Deep<*>?>>(value)
-public class DeepString(value: String) : Deep<String>(value)
-
-@JvmSynthetic
-public fun deep(value: Any?): Deep<*>? = when (value) {
-    null -> null
-    is Deep<*> -> value
-    is Iterable<*> -> DeepList(value.map(::deep))
-    is Array<*> -> DeepList(value.map(::deep))
-    is BooleanArray -> DeepList(value.map(::deep))
-    is ByteArray -> DeepList(value.map(::deep))
-    is UByteArray -> DeepList(value.map(::deep))
-    is CharArray -> DeepList(value.map(::deep))
-    is ShortArray -> DeepList(value.map(::deep))
-    is UShortArray -> DeepList(value.map(::deep))
-    is IntArray -> DeepList(value.map(::deep))
-    is UIntArray -> DeepList(value.map(::deep))
-    is LongArray -> DeepList(value.map(::deep))
-    is ULongArray -> DeepList(value.map(::deep))
-    is FloatArray -> DeepList(value.map(::deep))
-    is DoubleArray -> DeepList(value.map(::deep))
-    is Map<*, *> -> DeepMap(value.entries.associate { (k, v) -> k.toString() to deep(v) })
-    else -> DeepString(value.toString())
+public class DeepMap(value: Map<String, Deep<*>?>) : Deep<Map<String, Deep<*>?>>(value) {
+    public constructor(vararg entries: Pair<String, Deep<*>?>) : this(entries.toMap())
 }
 
-@JvmSynthetic
-public fun deep(vararg entries: Pair<*, *>): DeepMap = DeepMap(entries.associate { (k, v) -> k.toString() to deep(v) })
+public class DeepList(value: List<Deep<*>?>) : Deep<List<Deep<*>?>>(value) {
+    public constructor(vararg values: Deep<*>?) : this(values.toList())
+}
 
-@JvmSynthetic
-public fun deep(vararg values: Any?): DeepList = DeepList(values.map(::deep))
+public class DeepString(value: String) : Deep<String>(value)
 
 @JvmSynthetic
 public operator fun Deep<*>?.get(index: Int): Deep<*>? = list?.getOrNull(index)
