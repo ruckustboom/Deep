@@ -4,6 +4,7 @@ public sealed class Deep<out T>
 
 public class DeepMap<out T>(public val map: Map<String, Deep<T>>) : Deep<T>() {
     public constructor(vararg entries: Pair<String, Deep<T>>) : this(mapOf(*entries))
+
     override fun toString(): String = map.toString()
     override fun hashCode(): Int = map.hashCode()
     override fun equals(other: Any?): Boolean {
@@ -16,6 +17,7 @@ public class DeepMap<out T>(public val map: Map<String, Deep<T>>) : Deep<T>() {
 
 public class DeepList<out T>(public val list: List<Deep<T>>) : Deep<T>() {
     public constructor(vararg elements: Deep<T>) : this(listOf(*elements))
+
     override fun toString(): String = list.toString()
     override fun hashCode(): Int = list.hashCode()
     override fun equals(other: Any?): Boolean {

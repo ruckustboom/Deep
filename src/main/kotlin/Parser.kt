@@ -10,7 +10,7 @@ public inline fun <T> Reader.parse(parse: ParseState.() -> T): T = initParse().p
 public fun Reader.initParse(): ParseState = ParseStateImpl(this).apply { read() }
 
 public interface ParseState {
-   public val offset: Int
+    public val offset: Int
     public val lineCount: Int
     public val lineStart: Int
     public val char: Char
@@ -22,7 +22,7 @@ public interface ParseState {
     public fun finishCapture(): String
 }
 
-private class ParseStateImpl(private val stream: Reader): ParseState {
+private class ParseStateImpl(private val stream: Reader) : ParseState {
     override var offset = -1
     override var lineCount = 0
     override var lineStart = 0

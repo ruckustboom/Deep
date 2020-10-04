@@ -35,7 +35,7 @@ private fun <T> ParseState.readMap(parser: ValueParser<T>): DeepMap<T> {
     return DeepMap(map)
 }
 
-private fun<T> ParseState.readList(parser: ValueParser<T>): DeepList<T> {
+private fun <T> ParseState.readList(parser: ValueParser<T>): DeepList<T> {
     val list = mutableListOf<Deep<T>>()
     readCollection(']') {
         list += readDeep(parser)
