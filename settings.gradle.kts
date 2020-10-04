@@ -1,1 +1,1 @@
-rootProject.name = "deep-string"
+rootProject.name = "deep"

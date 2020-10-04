@@ -1,152 +1,110 @@
 package deep
 
 import java.io.Reader
-import java.io.StringReader
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
-public const val EOI: Char = '\u0000'
+/**
+ * This method does **NOT** close the reader or check for input exhaustion. It
+ * is up to the user to handle that.
+ */
+public inline fun <T> Reader.parse(parse: ParseState.() -> T): T = initParse().parse()
+public fun Reader.initParse(): ParseState = ParseStateImpl(this).apply { read() }
 
-public abstract class Parser<T> {
-    protected var currentChar: Char = EOI
-        private set
+public interface ParseState {
+   public val offset: Int
+    public val lineCount: Int
+    public val lineStart: Int
+    public val char: Char
+    public val isEndOfInput: Boolean
+    public fun read()
+    public fun startCapture()
+    public fun addToCapture(char: Char)
+    public fun pauseCapture()
+    public fun finishCapture(): String
+}
 
-    private lateinit var stream: Reader
-    private var lineCount = 0
-    private var lineStart = 0
+private class ParseStateImpl(private val stream: Reader): ParseState {
+    override var offset = -1
+    override var lineCount = 0
+    override var lineStart = 0
+    override var char = '\u0000'
+    override var isEndOfInput = true
 
-    private var buffer: CharArray = CharArray(0)
-    private var bufferStart = 0
-    private var bufferLength = 0
-    private var bufferHead = 0
+    // Read
+
+    override fun read() {
+        // Check for newline
+        if (isCapturing) capture.append(char)
+        if (char == '\n') {
+            lineCount++
+            lineStart = offset
+        }
+        val next = stream.read()
+        if (next >= 0) {
+            offset++
+            char = next.toChar()
+            isEndOfInput = false
+        } else {
+            char = '\u0000'
+            isEndOfInput = true
+        }
+    }
+
+    // Capture
 
     private val capture = StringBuilder()
-    private var captureStart = -1
+    private var isCapturing = false
 
-    private val lock = ReentrantLock()
-
-    protected abstract fun parse(): T
-
-    public fun parse(string: String): T = invoke(StringReader(string), string.length.coerceIn(1, DEFAULT_BUFFER_SIZE))
-    public fun parse(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): T = lock.withLock {
-        require(bufferSize > 0) { "Buffer size must be > 0" }
-        reader.use {
-            currentChar = EOI
-            stream = it
-            lineCount = 0
-            lineStart = 0
-            buffer = CharArray(bufferSize)
-            bufferStart = 0
-            bufferLength = 0
-            bufferHead = 0
-            captureStart = -1
-            // Parse
-            read()
-            val result = parse()
-            ensure(currentChar == EOI) { "Expected EOI" }
-            result
-        }
+    override fun startCapture() {
+        ensure(!isCapturing) { "Already capturing" }
+        isCapturing = true
     }
 
-    // Implementation
-
-    /**
-     * Read in the next character fro the stream
-     *
-     * Any function that reads data from the stream should ultimately lead here.
-     * This function automatically handles buffering the data and keeping track
-     * of the position in the file.
-     */
-    protected fun read() {
-        // Update buffer if depleted
-        if (bufferHead == bufferLength) {
-            // Dump capture if currently capturing
-            if (captureStart != -1) {
-                capture.append(buffer, captureStart, bufferLength - captureStart)
-                captureStart = 0
-            }
-            bufferStart += bufferLength
-            bufferLength = stream.read(buffer, 0, buffer.size)
-            bufferHead = 0
-            if (bufferLength == -1) {
-                currentChar = EOI
-                bufferHead++
-                return
-            }
-        }
-        // Check for newline
-        if (currentChar == '\n') {
-            lineCount++
-            lineStart = bufferStart + bufferHead
-        }
-        currentChar = buffer[bufferHead++]
+    override fun pauseCapture() {
+        ensure(isCapturing) { "Not currently capturing" }
+        isCapturing = false
     }
 
-    protected fun startCapture() {
-        captureStart = bufferHead - 1
-    }
-
-    protected fun pauseCapture() {
-        val end = if (currentChar == EOI) bufferHead else bufferHead - 1
-        capture.append(buffer, captureStart, end - captureStart)
-        captureStart = -1
-    }
-
-    protected fun capture(char: Char) {
+    override fun addToCapture(char: Char) {
         capture.append(char)
     }
 
-    protected fun finishCapture(): String {
-        val start = captureStart
-        val end = bufferHead - 1
-        captureStart = -1
-        return if (capture.isNotEmpty()) {
-            capture.append(buffer, start, end - start)
-            val captured = capture.toString()
-            capture.setLength(0)
-            captured
-        } else String(buffer, start, end - start)
+    override fun finishCapture(): String {
+        ensure(isCapturing) { "Not currently capturing" }
+        isCapturing = false
+        val string = capture.toString()
+        capture.setLength(0)
+        return string
     }
-
-    // Helpers
-
-    private fun getLocation(): Location {
-        val offset = bufferStart + bufferHead - 1
-        val column = offset - lineStart
-        return Location(offset, lineCount, column)
-    }
-
-    protected inline fun readWhile(predicate: (Char) -> Boolean) {
-        while (predicate(currentChar)) read()
-    }
-
-    protected inline fun readIf(predicate: (Char) -> Boolean): Boolean = if (predicate(currentChar)) {
-        read()
-        true
-    } else false
-
-    // Exception handling
-
-    protected inline fun ensure(condition: Boolean, message: () -> String) {
-        if (!condition) crash(message())
-    }
-
-    protected fun crash(message: String, cause: Throwable? = null): Nothing =
-        throw ParseException(getLocation(), currentChar, message, cause)
 }
 
 public class ParseException(
     public val location: Location,
     public val character: Char,
     public val description: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception("$description (found <$character>/${character.toInt()} at $location)", cause)
 
-public data class Location(val offset: Int, val line: Int, val column: Int)
+public data class Location(val offset: Int, val line: Int, val lineOffset: Int)
 
-@JvmSynthetic
-public operator fun <T> Parser<T>.invoke(string: String): T = parse(string)
+// Some common helpers
 
-@JvmSynthetic
-public operator fun <T> Parser<T>.invoke(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE): T =
-    parse(reader, bufferSize)
+public inline fun ParseState.readWhile(predicate: (Char) -> Boolean) {
+    while (!isEndOfInput && predicate(char)) read()
+}
+
+public inline fun ParseState.readIf(predicate: (Char) -> Boolean): Boolean = if (!isEndOfInput && predicate(char)) {
+    read()
+    true
+} else false
+
+public inline fun ParseState.ensure(condition: Boolean, message: () -> String) {
+    if (!condition) crash(message())
+}
+
+public fun ParseState.crash(message: String, cause: Throwable? = null): Nothing =
+    throw ParseException(getLocation(), char, message, cause)
+
+public fun ParseState.getLocation(): Location {
+    val lineOffset = offset - lineStart
+    return Location(offset, lineCount, lineOffset)
+}

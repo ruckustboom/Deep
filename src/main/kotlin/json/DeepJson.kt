@@ -1,5 +1,6 @@
-package deep.v2
+package deep.json
 
+import deep.*
 import java.io.Writer
 
 public typealias DeepJson = Deep<JsonValue?>
@@ -10,8 +11,8 @@ public class JsonNumber(public val value: Number) : JsonValue()
 public object JsonTrue : JsonValue()
 public object JsonFalse : JsonValue()
 
-public object JsonValueWriter : ValueWriter<JsonValue?> {
-    override fun Writer.append(value: JsonValue?) {
+public object JsonValueEncoder : ValueEncoder<JsonValue?> {
+    override fun Writer.encodeValue(value: JsonValue?) {
         when (value) {
             null -> write("null")
             JsonTrue -> write("true")
@@ -22,12 +23,12 @@ public object JsonValueWriter : ValueWriter<JsonValue?> {
     }
 }
 
-public fun json(string: String): DeepJson = deep(JsonString(string))
-public fun json(number: Number): DeepJson = deep(JsonNumber(number))
-public fun json(boolean: Boolean): DeepJson = deep(if (boolean) JsonTrue else JsonFalse)
-public fun json(nothing: Nothing?): DeepJson = deep(nothing)
-public fun json(vararg entries: Pair<String, DeepJson>): DeepJson = deep(*entries)
-public fun json(vararg elements: DeepJson): DeepJson = deep(*elements)
+public fun json(string: String): DeepJson = DeepValue(JsonString(string))
+public fun json(number: Number): DeepJson = DeepValue(JsonNumber(number))
+public fun json(boolean: Boolean): DeepJson = DeepValue(if (boolean) JsonTrue else JsonFalse)
+public fun json(nothing: Nothing?): DeepJson = DeepValue(nothing)
+public fun json(vararg entries: Pair<String, DeepJson>): DeepJson = DeepMap(*entries)
+public fun json(vararg elements: DeepJson): DeepJson = DeepList(*elements)
 
 public fun main() {
     val json = json(
@@ -44,6 +45,6 @@ public fun main() {
             json(null),
         )
     )
-    val formatter = DeepFormatter.minified(JsonValueWriter)
+    val formatter = DeepEncoder.minified(JsonValueEncoder)
     println(formatter.toString(json))
 }
