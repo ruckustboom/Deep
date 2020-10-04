@@ -3,7 +3,7 @@ package deep
 import java.io.StringWriter
 import java.io.Writer
 
-public fun interface ValueEncoder<T> {
+public fun interface ValueEncoder<in T> {
     public fun Writer.encodeValue(value: T)
 }
 
@@ -44,7 +44,7 @@ public class DeepEncoder<T> private constructor(
     }
 
     private fun Writer.encodeEntry(entry: Map.Entry<String, Deep<T>>, level: Int) {
-        encode(entry.key)
+        encodeStringLiteral(entry.key)
         append(':')
         if (indentation != null) append(' ')
         encodeDeep(entry.value, level)
@@ -89,7 +89,7 @@ public inline fun <T> DeepEncoder<T>.toString(value: Deep<T>): String =
     StringWriter().apply { use { encode(value, it) } }.toString()
 
 private const val HEX_CHARS = "0123456789abcdef"
-public fun Writer.encode(string: String) {
+public fun Writer.encodeStringLiteral(string: String) {
     append('"')
     for (char in string) {
         when {

@@ -3,13 +3,13 @@ package deep
 import java.io.Reader
 import java.io.StringReader
 
-public fun interface ValueParser<T> {
-    public fun ParseState.parse(): T
+public fun interface ValueParser<out T> {
+    public fun ParseState.parseValue(): T
 }
 
 public fun <T> Reader.parseDeep(parser: ValueParser<T>): Deep<T> = parse {
     skipWhitespace()
-    return readDeep(parser)
+    return parseDeep(parser)
 }
 
 public inline fun <T> String.parseDeep(parser: ValueParser<T>): Deep<T> =
@@ -17,34 +17,34 @@ public inline fun <T> String.parseDeep(parser: ValueParser<T>): Deep<T> =
 
 private fun ParseState.skipWhitespace() = readWhile { it.isWhitespace() }
 
-private fun <T> ParseState.readDeep(parser: ValueParser<T>): Deep<T> = when (char) {
-    '{' -> readMap(parser)
-    '[' -> readList(parser)
-    else -> DeepValue(with(parser) { parse() })
+private fun <T> ParseState.parseDeep(parser: ValueParser<T>): Deep<T> = when (char) {
+    '{' -> parseMap(parser)
+    '[' -> parseList(parser)
+    else -> DeepValue(with(parser) { parseValue() })
 }
 
-private fun <T> ParseState.readMap(parser: ValueParser<T>): DeepMap<T> {
+private fun <T> ParseState.parseMap(parser: ValueParser<T>): DeepMap<T> {
     val map = mutableMapOf<String, Deep<T>>()
-    readCollection('}') {
-        val key = readStringLiteral()
+    parseCollection('}') {
+        val key = parseStringLiteral()
         skipWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
         skipWhitespace()
-        map[key] = readDeep(parser)
+        map[key] = parseDeep(parser)
     }
     return DeepMap(map)
 }
 
-private fun <T> ParseState.readList(parser: ValueParser<T>): DeepList<T> {
+private fun <T> ParseState.parseList(parser: ValueParser<T>): DeepList<T> {
     val list = mutableListOf<Deep<T>>()
-    readCollection(']') {
-        list += readDeep(parser)
+    parseCollection(']') {
+        list += parseDeep(parser)
     }
     return DeepList(list)
 }
 
-private inline fun ParseState.readCollection(end: Char, action: () -> Unit) {
-    read()
+private inline fun ParseState.parseCollection(end: Char, action: () -> Unit) {
+    next()
     skipWhitespace()
     if (readOptionalChar(end)) return
     do {
@@ -57,16 +57,16 @@ private inline fun ParseState.readCollection(end: Char, action: () -> Unit) {
 
 // Helpers
 
-public fun ParseState.readStringLiteral(): String {
-    val delim = char
-    ensure(delim == '"' || delim == '\'') { "Expected: \" or '" }
-    readRequiredChar(delim)
+public fun ParseState.parseStringLiteral(): String {
+    val delimiter = char
+    ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
+    readRequiredChar(delimiter)
     startCapture()
-    while (char != delim) {
+    while (char != delimiter) {
         ensure(char >= '\u0020') { "Invalid character" }
         if (char == '\\') {
             pauseCapture()
-            read()
+            next()
             addToCapture(
                 when (char) {
                     'n' -> '\n'
@@ -75,21 +75,21 @@ public fun ParseState.readStringLiteral(): String {
                     'b' -> '\b'
                     'f' -> '\u000c'
                     'u' -> String(CharArray(4) {
-                        read()
+                        next()
                         ensure(char.isHexDigit()) { "Invalid hex digit" }
                         char
                     }).toInt(16).toChar()
                     else -> char
                 }
             )
-            read()
+            next()
             startCapture()
         } else {
-            read()
+            next()
         }
     }
     val string = finishCapture()
-    read()
+    next()
     return string
 }
 

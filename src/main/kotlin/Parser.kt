@@ -7,7 +7,7 @@ import java.io.Reader
  * is up to the user to handle that.
  */
 public inline fun <T> Reader.parse(parse: ParseState.() -> T): T = initParse().parse()
-public fun Reader.initParse(): ParseState = ParseStateImpl(this).apply { read() }
+public fun Reader.initParse(): ParseState = ParseStateImpl(this).apply { next() }
 
 public interface ParseState {
     public val offset: Int
@@ -15,7 +15,7 @@ public interface ParseState {
     public val lineStart: Int
     public val char: Char
     public val isEndOfInput: Boolean
-    public fun read()
+    public fun next()
     public fun startCapture()
     public fun addToCapture(char: Char)
     public fun pauseCapture()
@@ -31,7 +31,7 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
 
     // Read
 
-    override fun read() {
+    override fun next() {
         // Check for newline
         if (isCapturing) capture.append(char)
         if (char == '\n') {
@@ -89,11 +89,11 @@ public data class Location(val offset: Int, val line: Int, val lineOffset: Int)
 // Some common helpers
 
 public inline fun ParseState.readWhile(predicate: (Char) -> Boolean) {
-    while (!isEndOfInput && predicate(char)) read()
+    while (!isEndOfInput && predicate(char)) next()
 }
 
 public inline fun ParseState.readIf(predicate: (Char) -> Boolean): Boolean = if (!isEndOfInput && predicate(char)) {
-    read()
+    next()
     true
 } else false
 
