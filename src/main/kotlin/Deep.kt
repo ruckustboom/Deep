@@ -1,40 +1,64 @@
 package deep
 
-public sealed class Deep<out T>
+public sealed class Deep<out T> {
+    public abstract fun <R> map(convert: (T) -> Deep<R>): Deep<R>
+    public abstract fun <U, R> merge(b: Deep<U>, action: (T, Deep<U>) -> Deep<R>): Deep<R>
+}
 
-public class DeepMap<out T>(public val map: Map<String, Deep<T>>) : Deep<T>() {
+public class DeepMap<out T>(public val data: Map<String, Deep<T>>) : Deep<T>() {
     public constructor(vararg entries: Pair<String, Deep<T>>) : this(mapOf(*entries))
 
-    override fun toString(): String = map.toString()
-    override fun hashCode(): Int = map.hashCode()
+    override fun <R> map(convert: (T) -> Deep<R>): Deep<R> = DeepMap(data.mapValues { (_, it) -> it.map(convert) })
+    override fun <U, R> merge(b: Deep<U>, action: (T, Deep<U>) -> Deep<R>): Deep<R> {
+        b as DeepMap<U>
+        return DeepMap(data.mapValues { (key, value) -> value.merge(b.data.getValue(key), action) })
+    }
+
+    override fun toString(): String = data.toString()
+    override fun hashCode(): Int = data.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as DeepMap<*>
-        return map == other.map
+        return data == other.data
     }
 }
 
-public class DeepList<out T>(public val list: List<Deep<T>>) : Deep<T>() {
+public class DeepList<out T>(public val data: List<Deep<T>>) : Deep<T>() {
     public constructor(vararg elements: Deep<T>) : this(listOf(*elements))
 
-    override fun toString(): String = list.toString()
-    override fun hashCode(): Int = list.hashCode()
+    override fun <R> map(convert: (T) -> Deep<R>): Deep<R> = DeepList(data.map { it.map(convert) })
+    override fun <U, R> merge(b: Deep<U>, action: (T, Deep<U>) -> Deep<R>): Deep<R> {
+        b as DeepList<U>
+        return DeepList(data.mapIndexed { index, value -> value.merge(b.data[index], action) })
+    }
+
+    override fun toString(): String = data.toString()
+    override fun hashCode(): Int = data.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as DeepList<*>
-        return list == other.list
+        return data == other.data
     }
 }
 
-public class DeepValue<out T>(public val value: T) : Deep<T>() {
-    override fun toString(): String = value.toString()
-    override fun hashCode(): Int = value?.hashCode() ?: 0
+public class DeepValue<out T>(public val data: T) : Deep<T>() {
+    override fun <R> map(convert: (T) -> Deep<R>): Deep<R> = convert(data)
+    override fun <U, R> merge(b: Deep<U>, action: (T, Deep<U>) -> Deep<R>): Deep<R> = action(data, b)
+
+    override fun toString(): String = data.toString()
+    override fun hashCode(): Int = data?.hashCode() ?: 0
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as DeepValue<*>
-        return value == other.value
+        return data == other.data
     }
+}
+
+public fun <T> Deep<Deep<T>>.flatten(): Deep<T> = when (this) {
+    is DeepMap<Deep<T>> -> DeepMap(data.mapValues { (_, value) -> value.flatten() })
+    is DeepList<Deep<T>> -> DeepList(data.map { it.flatten() })
+    is DeepValue<Deep<T>> -> data
 }

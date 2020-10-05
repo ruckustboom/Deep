@@ -17,9 +17,9 @@ public class DeepEncoder<T> private constructor(
 
     private fun Writer.encodeDeep(value: Deep<T>, level: Int) {
         when (value) {
-            is DeepMap -> encodeMap(value.map, level)
-            is DeepList -> encodeList(value.list, level)
-            is DeepValue -> with(valueEncoder) { encodeValue(value.value) }
+            is DeepMap -> encodeMap(value.data, level)
+            is DeepList -> encodeList(value.data, level)
+            is DeepValue -> with(valueEncoder) { encodeValue(value.data) }
         }
     }
 
