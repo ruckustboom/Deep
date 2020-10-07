@@ -3,47 +3,45 @@ package deep
 import java.io.Reader
 import java.io.StringReader
 
-public fun interface ValueParser<out T> {
-    public fun ParseState.parseValue(): T
+public fun interface ValueDeserializer<out T> {
+    public fun ParseState.deserializeValue(): T
 }
 
-public fun <T> Reader.parseDeep(parser: ValueParser<T>): Deep<T> = parse {
+public fun <T> Reader.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> = parse {
     skipWhitespace()
-    return parseDeep(parser)
+    return deserializeDeep(deserializer)
 }
 
-public inline fun <T> String.parseDeep(parser: ValueParser<T>): Deep<T> =
-    StringReader(this).use { it.parseDeep(parser) }
+public inline fun <T> String.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> =
+    StringReader(this).use { it.deserializeDeep(deserializer) }
 
-private fun ParseState.skipWhitespace() = readWhile { it.isWhitespace() }
-
-private fun <T> ParseState.parseDeep(parser: ValueParser<T>): Deep<T> = when (char) {
-    '{' -> parseMap(parser)
-    '[' -> parseList(parser)
-    else -> DeepValue(with(parser) { parseValue() })
+private fun <T> ParseState.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> = when (char) {
+    '{' -> deserializeMap(deserializer)
+    '[' -> deserializeList(deserializer)
+    else -> DeepValue(with(deserializer) { deserializeValue() })
 }
 
-private fun <T> ParseState.parseMap(parser: ValueParser<T>): DeepMap<T> {
+private fun <T> ParseState.deserializeMap(deserializer: ValueDeserializer<T>): DeepMap<T> {
     val map = mutableMapOf<String, Deep<T>>()
-    parseCollection('}') {
-        val key = parseStringLiteral()
+    deserializeCollection('}') {
+        val key = decodeStringLiteral()
         skipWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
         skipWhitespace()
-        map[key] = parseDeep(parser)
+        map[key] = deserializeDeep(deserializer)
     }
     return DeepMap(map)
 }
 
-private fun <T> ParseState.parseList(parser: ValueParser<T>): DeepList<T> {
+private fun <T> ParseState.deserializeList(deserializer: ValueDeserializer<T>): DeepList<T> {
     val list = mutableListOf<Deep<T>>()
-    parseCollection(']') {
-        list += parseDeep(parser)
+    deserializeCollection(']') {
+        list += deserializeDeep(deserializer)
     }
     return DeepList(list)
 }
 
-private inline fun ParseState.parseCollection(end: Char, action: () -> Unit) {
+private inline fun ParseState.deserializeCollection(end: Char, action: () -> Unit) {
     next()
     skipWhitespace()
     if (readOptionalChar(end)) return
@@ -57,7 +55,9 @@ private inline fun ParseState.parseCollection(end: Char, action: () -> Unit) {
 
 // Helpers
 
-public fun ParseState.parseStringLiteral(): String {
+public fun ParseState.skipWhitespace(): Unit = readWhile { it.isWhitespace() }
+
+public fun ParseState.decodeStringLiteral(): String {
     val delimiter = char
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     readRequiredChar(delimiter)
