@@ -17,8 +17,8 @@ public interface ParseState {
     public val isEndOfInput: Boolean
     public fun next()
     public fun startCapture()
-    public fun addToCapture(char: Char)
     public fun pauseCapture()
+    public fun addToCapture(char: Char)
     public fun finishCapture(): String
 }
 
@@ -32,8 +32,8 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
     // Read
 
     override fun next() {
-        // Check for newline
         if (isCapturing) capture.append(char)
+        // Check for newline
         if (char == '\n') {
             lineCount++
             lineStart = offset
@@ -55,12 +55,10 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
     private var isCapturing = false
 
     override fun startCapture() {
-        ensure(!isCapturing) { "Already capturing" }
         isCapturing = true
     }
 
     override fun pauseCapture() {
-        ensure(isCapturing) { "Not currently capturing" }
         isCapturing = false
     }
 
@@ -69,7 +67,6 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
     }
 
     override fun finishCapture(): String {
-        ensure(isCapturing) { "Not currently capturing" }
         isCapturing = false
         val string = capture.toString()
         capture.setLength(0)
@@ -78,13 +75,13 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
 }
 
 public class ParseException(
-    public val location: Location,
+    public val offset: Int,
+    public val line: Int,
+    public val column: Int,
     public val character: Char,
     public val description: String,
     cause: Throwable? = null,
-) : Exception("$description (found <$character>/${character.toInt()} at $location)", cause)
-
-public data class Location(val offset: Int, val line: Int, val lineOffset: Int)
+) : Exception("$description (found <$character>/${character.toInt()} at $offset ($line:$column))", cause)
 
 // Some common helpers
 
@@ -102,9 +99,4 @@ public inline fun ParseState.ensure(condition: Boolean, message: () -> String) {
 }
 
 public fun ParseState.crash(message: String, cause: Throwable? = null): Nothing =
-    throw ParseException(getLocation(), char, message, cause)
-
-public fun ParseState.getLocation(): Location {
-    val lineOffset = offset - lineStart
-    return Location(offset, lineCount, lineOffset)
-}
+    throw ParseException(offset, lineCount, offset - lineStart, char, message, cause)

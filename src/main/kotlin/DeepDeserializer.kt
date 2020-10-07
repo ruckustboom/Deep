@@ -60,7 +60,7 @@ public fun ParseState.skipWhitespace(): Unit = readWhile { it.isWhitespace() }
 public fun ParseState.decodeStringLiteral(): String {
     val delimiter = char
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
-    readRequiredChar(delimiter)
+    next()
     startCapture()
     while (char != delimiter) {
         ensure(char >= '\u0020') { "Invalid character" }
