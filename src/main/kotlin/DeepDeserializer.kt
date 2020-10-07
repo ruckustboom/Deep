@@ -4,7 +4,7 @@ import java.io.Reader
 import java.io.StringReader
 
 public fun interface ValueDeserializer<out T> {
-    public fun ParseState.deserializeValue(): T
+    public fun TextParseState.deserializeValue(): T
 }
 
 public fun <T> Reader.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> = parse {
@@ -12,16 +12,13 @@ public fun <T> Reader.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<
     return deserializeDeep(deserializer)
 }
 
-public inline fun <T> String.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> =
-    StringReader(this).use { it.deserializeDeep(deserializer) }
-
-private fun <T> ParseState.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> = when (char) {
+private fun <T> TextParseState.deserializeDeep(deserializer: ValueDeserializer<T>): Deep<T> = when (char) {
     '{' -> deserializeMap(deserializer)
     '[' -> deserializeList(deserializer)
     else -> DeepValue(with(deserializer) { deserializeValue() })
 }
 
-private fun <T> ParseState.deserializeMap(deserializer: ValueDeserializer<T>): DeepMap<T> {
+private fun <T> TextParseState.deserializeMap(deserializer: ValueDeserializer<T>): DeepMap<T> {
     val map = mutableMapOf<String, Deep<T>>()
     deserializeCollection('}') {
         val key = decodeStringLiteral()
@@ -33,7 +30,7 @@ private fun <T> ParseState.deserializeMap(deserializer: ValueDeserializer<T>): D
     return DeepMap(map)
 }
 
-private fun <T> ParseState.deserializeList(deserializer: ValueDeserializer<T>): DeepList<T> {
+private fun <T> TextParseState.deserializeList(deserializer: ValueDeserializer<T>): DeepList<T> {
     val list = mutableListOf<Deep<T>>()
     deserializeCollection(']') {
         list += deserializeDeep(deserializer)
@@ -41,7 +38,8 @@ private fun <T> ParseState.deserializeList(deserializer: ValueDeserializer<T>): 
     return DeepList(list)
 }
 
-private inline fun ParseState.deserializeCollection(end: Char, action: () -> Unit) {
+// TODO: Allow trailing commas
+private inline fun TextParseState.deserializeCollection(end: Char, action: () -> Unit) {
     next()
     skipWhitespace()
     if (readOptionalChar(end)) return
@@ -55,9 +53,9 @@ private inline fun ParseState.deserializeCollection(end: Char, action: () -> Uni
 
 // Helpers
 
-public fun ParseState.skipWhitespace(): Unit = readWhile { it.isWhitespace() }
+public fun TextParseState.skipWhitespace(): Unit = readWhile { it.isWhitespace() }
 
-public fun ParseState.decodeStringLiteral(): String {
+public fun TextParseState.decodeStringLiteral(): String {
     val delimiter = char
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     next()
@@ -93,6 +91,6 @@ public fun ParseState.decodeStringLiteral(): String {
     return string
 }
 
-public fun ParseState.readRequiredChar(char: Char): Unit = ensure(readOptionalChar(char)) { "Expected: $char" }
-public fun ParseState.readOptionalChar(char: Char): Boolean = readIf { it.toLowerCase() == char.toLowerCase() }
+public fun TextParseState.readRequiredChar(char: Char): Unit = ensure(readOptionalChar(char)) { "Expected: $char" }
+public fun TextParseState.readOptionalChar(char: Char): Boolean = readIf { it.toLowerCase() == char.toLowerCase() }
 public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'

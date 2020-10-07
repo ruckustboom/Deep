@@ -1,15 +1,24 @@
 package deep
 
 import java.io.Reader
+import java.io.StringReader
 
 /**
  * This method does **NOT** close the reader or check for input exhaustion. It
  * is up to the user to handle that.
  */
-public inline fun <T> Reader.parse(parse: ParseState.() -> T): T = initParse().parse()
-public fun Reader.initParse(): ParseState = ParseStateImpl(this).apply { next() }
+public inline fun <T> Reader.parse(parse: TextParseState.() -> T): T = initParse().parse()
+public fun Reader.initParse(): TextParseState = TextParseStateImpl(this).apply { next() }
 
-public interface ParseState {
+public inline fun <T> String.parse(consumeAll: Boolean = true, parse: TextParseState.() -> T): T =
+    StringReader(this).use {
+        val state = it.initParse()
+        val value = state.parse()
+        if (consumeAll && state.offset < length) state.crash("Unexpected: ${state.char} (${state.offset} vs $length)")
+        value
+    }
+
+public interface TextParseState {
     public val offset: Int
     public val lineCount: Int
     public val lineStart: Int
@@ -22,16 +31,17 @@ public interface ParseState {
     public fun finishCapture(): String
 }
 
-private class ParseStateImpl(private val stream: Reader) : ParseState {
+private class TextParseStateImpl(private val stream: Reader) : TextParseState {
     override var offset = -1
     override var lineCount = 0
     override var lineStart = 0
     override var char = '\u0000'
-    override var isEndOfInput = true
+    override var isEndOfInput = false
 
     // Read
 
     override fun next() {
+        ensure(!isEndOfInput) { "Unexpected EOI" }
         if (isCapturing) capture.append(char)
         // Check for newline
         if (char == '\n') {
@@ -39,8 +49,8 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
             lineStart = offset
         }
         val next = stream.read()
+        offset++
         if (next >= 0) {
-            offset++
             char = next.toChar()
             isEndOfInput = false
         } else {
@@ -74,7 +84,7 @@ private class ParseStateImpl(private val stream: Reader) : ParseState {
     }
 }
 
-public class ParseException(
+public class TextParseException(
     public val offset: Int,
     public val line: Int,
     public val column: Int,
@@ -85,18 +95,25 @@ public class ParseException(
 
 // Some common helpers
 
-public inline fun ParseState.readWhile(predicate: (Char) -> Boolean) {
-    while (!isEndOfInput && predicate(char)) next()
-}
+public fun TextParseState.crash(message: String, cause: Throwable? = null): Nothing =
+    throw TextParseException(offset, lineCount, offset - lineStart, char, message, cause)
 
-public inline fun ParseState.readIf(predicate: (Char) -> Boolean): Boolean = if (!isEndOfInput && predicate(char)) {
-    next()
-    true
-} else false
-
-public inline fun ParseState.ensure(condition: Boolean, message: () -> String) {
+public inline fun TextParseState.ensure(condition: Boolean, message: () -> String) {
     if (!condition) crash(message())
 }
 
-public fun ParseState.crash(message: String, cause: Throwable? = null): Nothing =
-    throw ParseException(offset, lineCount, offset - lineStart, char, message, cause)
+public inline fun TextParseState.readIf(predicate: (Char) -> Boolean): Boolean =
+    if (!isEndOfInput && predicate(char)) {
+        next()
+        true
+    } else false
+
+public inline fun TextParseState.readWhile(predicate: (Char) -> Boolean) {
+    while (!isEndOfInput && predicate(char)) next()
+}
+
+public inline fun TextParseState.captureWhile(predicate: (Char) -> Boolean): String {
+    startCapture()
+    readWhile(predicate)
+    return finishCapture()
+}
