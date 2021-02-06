@@ -10,13 +10,15 @@ import java.io.StringReader
 public inline fun <T> Reader.parse(parse: TextParseState.() -> T): T = initParse().parse()
 public fun Reader.initParse(): TextParseState = TextParseStateImpl(this).apply { next() }
 
-public inline fun <T> String.parse(consumeAll: Boolean = true, parse: TextParseState.() -> T): T =
-    StringReader(this).use {
-        val state = it.initParse()
-        val value = state.parse()
-        if (consumeAll && state.offset < length) state.crash("Unexpected: ${state.char} (${state.offset} vs $length)")
-        value
-    }
+public inline fun <T> String.parse(
+    consumeAll: Boolean = true,
+    parse: TextParseState.() -> T,
+): T = StringReader(this).use {
+    val state = it.initParse()
+    val value = state.parse()
+    if (consumeAll && state.offset < length) state.crash("Unexpected: ${state.char} (${state.offset} vs $length)")
+    value
+}
 
 public interface TextParseState {
     public val offset: Int
