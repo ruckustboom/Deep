@@ -93,7 +93,7 @@ public class TextParseException(
     public val character: Char,
     public val description: String,
     cause: Throwable? = null,
-) : Exception("$description (found <$character>/${character.toInt()} at $offset ($line:$column))", cause)
+) : Exception("$description (found <$character>/${character.code} at $offset ($line:$column))", cause)
 
 // Some common helpers
 
@@ -163,5 +163,9 @@ public fun TextParseState.readRequiredChar(char: Char, ignoreCase: Boolean = fal
 
 public fun TextParseState.readOptionalChar(char: Char, ignoreCase: Boolean = false): Boolean =
     readIf { it.equals(char, ignoreCase) }
+
+public fun TextParseState.readLiteral(literal: String, ignoreCase: Boolean = false) {
+    for (char in literal) readRequiredChar(char, ignoreCase)
+}
 
 public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
