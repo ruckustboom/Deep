@@ -1,4 +1,4 @@
-package deep
+package parse
 
 import java.io.Reader
 import java.io.StringReader
@@ -44,7 +44,7 @@ private class TextParseStateImpl(private val stream: Reader) : TextParseState {
 
     override fun next() {
         ensure(!isEndOfInput) { "Unexpected EOI" }
-        if (isCapturing) capture.append(char)
+        if (isCapturing) addToCapture(char)
         // Check for newline
         if (char == '\n') {
             lineCount++

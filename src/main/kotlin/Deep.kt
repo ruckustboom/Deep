@@ -57,8 +57,4 @@ public class DeepValue<out T>(public val data: T) : Deep<T>() {
     }
 }
 
-public fun <T> Deep<Deep<T>>.flatten(): Deep<T> = when (this) {
-    is DeepMap<Deep<T>> -> DeepMap(data.mapValues { (_, value) -> value.flatten() })
-    is DeepList<Deep<T>> -> DeepList(data.map { it.flatten() })
-    is DeepValue<Deep<T>> -> data
-}
+public fun <T> Deep<Deep<T>>.flatten(): Deep<T> = map { it }

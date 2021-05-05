@@ -1,7 +1,7 @@
 package deep
 
+import parse.*
 import java.io.Reader
-import java.io.StringReader
 
 public fun interface ValueDeserializer<out T> {
     public fun TextParseState.deserializeValue(): T
@@ -91,6 +91,10 @@ public fun TextParseState.decodeStringLiteral(): String {
     return string
 }
 
-public fun TextParseState.readRequiredChar(char: Char): Unit = ensure(readOptionalChar(char)) { "Expected: $char" }
-public fun TextParseState.readOptionalChar(char: Char): Boolean = readIf { it.toLowerCase() == char.toLowerCase() }
+public fun TextParseState.readRequiredChar(char: Char, ignoreCase: Boolean = false): Unit =
+    ensure(readOptionalChar(char, ignoreCase)) { "Expected: $char" }
+
+public fun TextParseState.readOptionalChar(char: Char, ignoreCase: Boolean = false): Boolean =
+    readIf { it.equals(char, ignoreCase) }
+
 public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'

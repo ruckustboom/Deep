@@ -1,4 +1,4 @@
-package deep
+package parse
 
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -23,7 +23,7 @@ private class BinaryParseStateImpl(private val stream: InputStream) : BinaryPars
 
     override fun next() {
         ensure(!isEndOfInput) { "Unexpected EOI" }
-        if (isCapturing) capture?.write(byte.toInt())
+        if (isCapturing) addToCapture(byte)
         val next = stream.read()
         offset++
         if (next >= 0) {
