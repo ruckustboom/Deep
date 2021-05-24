@@ -105,9 +105,9 @@ public fun Writer.encodeStringLiteral(string: String) {
             char == '\t' -> write("\\t")
             char < '\u0020' -> {
                 write("\\u00")
-                val int = char.toInt()
-                append(HEX_CHARS[int shr 4 and 0xf])
-                append(HEX_CHARS[int and 0xf])
+                val code = char.code
+                append(HEX_CHARS[code shr 4 and 0xf])
+                append(HEX_CHARS[code and 0xf])
             }
             else -> append(char)
         }
