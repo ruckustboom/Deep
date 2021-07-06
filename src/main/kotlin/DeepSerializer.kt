@@ -32,11 +32,9 @@ public class DeepSerializer<T> private constructor(
                 var index = 0
                 for (entry in map) {
                     if (index++ > 0) append(',')
-                    if (intent != null) appendLine()
                     addIndent(level + 1)
                     serializeEntry(entry, level + 1)
                 }
-                if (intent != null) appendLine()
                 addIndent(level)
             }
         }
@@ -59,12 +57,10 @@ public class DeepSerializer<T> private constructor(
                 list.forEachIndexed { i, v ->
                     if (i > 0) append(',')
                     if (list.size > 1) {
-                        if (intent != null) appendLine()
                         addIndent(level + 1)
                         serializeDeep(v, level + 1)
                     }
                 }
-                if (intent != null) appendLine()
                 addIndent(level)
             }
         }
@@ -72,7 +68,10 @@ public class DeepSerializer<T> private constructor(
     }
 
     private fun Writer.addIndent(level: Int) {
-        if (intent != null) repeat(level) { write(intent) }
+        if (intent != null) {
+            appendLine()
+            repeat(level) { write(intent) }
+        }
     }
 
     public companion object {

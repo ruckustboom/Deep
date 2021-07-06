@@ -3,23 +3,6 @@ package parse
 import java.io.Reader
 import java.io.StringReader
 
-/**
- * This method does **NOT** close the reader or check for input exhaustion. It
- * is up to the user to handle that.
- */
-public inline fun <T> Reader.parse(parse: TextParseState.() -> T): T = initParse().parse()
-public fun Reader.initParse(): TextParseState = TextParseStateImpl(this).apply { next() }
-
-public inline fun <T> String.parse(
-    consumeAll: Boolean = true,
-    parse: TextParseState.() -> T,
-): T = StringReader(this).use {
-    val state = it.initParse()
-    val value = state.parse()
-    if (consumeAll && state.offset < length) state.crash("Unexpected: ${state.char} (${state.offset} vs $length)")
-    value
-}
-
 public interface TextParseState {
     public val offset: Int
     public val lineCount: Int
@@ -32,6 +15,17 @@ public interface TextParseState {
     public fun addToCapture(char: Char)
     public fun finishCapture(): String
 }
+
+public class TextParseException(
+    public val offset: Int,
+    public val line: Int,
+    public val column: Int,
+    public val character: Char,
+    public val description: String,
+    cause: Throwable? = null,
+) : Exception("$description (found <$character>/${character.code} at $offset ($line:$column))", cause)
+
+// Implementation
 
 private class TextParseStateImpl(private val stream: Reader) : TextParseState {
     override var offset = -1
@@ -86,16 +80,25 @@ private class TextParseStateImpl(private val stream: Reader) : TextParseState {
     }
 }
 
-public class TextParseException(
-    public val offset: Int,
-    public val line: Int,
-    public val column: Int,
-    public val character: Char,
-    public val description: String,
-    cause: Throwable? = null,
-) : Exception("$description (found <$character>/${character.code} at $offset ($line:$column))", cause)
+public fun Reader.initParse(): TextParseState = TextParseStateImpl(this).apply { next() }
 
 // Some common helpers
+
+/**
+ * This method does **NOT** close the reader or check for input exhaustion. It
+ * is up to the user to handle that.
+ */
+public inline fun <T> Reader.parse(parse: TextParseState.() -> T): T = initParse().parse()
+
+public inline fun <T> String.parse(
+    consumeAll: Boolean = true,
+    parse: TextParseState.() -> T,
+): T = StringReader(this).use {
+    val state = it.initParse()
+    val value = state.parse()
+    if (consumeAll && state.offset < length) state.crash("Unexpected: ${state.char} (${state.offset} vs $length)")
+    value
+}
 
 public fun TextParseState.crash(message: String, cause: Throwable? = null): Nothing =
     throw TextParseException(offset, lineCount, offset - lineStart, char, message, cause)
@@ -121,42 +124,6 @@ public inline fun TextParseState.captureWhile(predicate: (Char) -> Boolean): Str
 }
 
 public fun TextParseState.skipWhitespace(): Unit = readWhile { it.isWhitespace() }
-
-public fun TextParseState.decodeStringLiteral(): String {
-    val delimiter = char
-    ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
-    next()
-    startCapture()
-    while (char != delimiter) {
-        ensure(char >= '\u0020') { "Invalid character" }
-        if (char == '\\') {
-            pauseCapture()
-            next()
-            addToCapture(
-                when (char) {
-                    'n' -> '\n'
-                    'r' -> '\r'
-                    't' -> '\t'
-                    'b' -> '\b'
-                    'f' -> '\u000c'
-                    'u' -> String(CharArray(4) {
-                        next()
-                        ensure(char.isHexDigit()) { "Invalid hex digit" }
-                        char
-                    }).toInt(16).toChar()
-                    else -> char
-                }
-            )
-            next()
-            startCapture()
-        } else {
-            next()
-        }
-    }
-    val string = finishCapture()
-    next()
-    return string
-}
 
 public fun TextParseState.readRequiredChar(char: Char, ignoreCase: Boolean = false): Unit =
     ensure(readOptionalChar(char, ignoreCase)) { "Expected: $char" }

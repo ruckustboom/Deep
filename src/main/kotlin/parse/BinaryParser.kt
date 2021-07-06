@@ -1,7 +1,6 @@
 package parse
 
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
+import java.io.*
 
 public interface BinaryParseState {
     public val offset: Int
@@ -13,6 +12,15 @@ public interface BinaryParseState {
     public fun addToCapture(byte: Byte)
     public fun finishCapture(): ByteArray
 }
+
+public class BinaryParseException(
+    public val offset: Int,
+    public val byte: Byte,
+    public val description: String,
+    cause: Throwable? = null,
+) : Exception("$description (found $byte at $offset)", cause)
+
+// Implementation
 
 private class BinaryParseStateImpl(private val stream: InputStream) : BinaryParseState {
     override var offset = -1
@@ -62,12 +70,25 @@ private class BinaryParseStateImpl(private val stream: InputStream) : BinaryPars
     }
 }
 
-public class BinaryParseException(
-    public val offset: Int,
-    public val byte: Byte,
-    public val description: String,
-    cause: Throwable? = null,
-) : Exception("$description (found $byte at $offset)", cause)
+public fun InputStream.initParse(): BinaryParseState = BinaryParseStateImpl(this).apply { next() }
+
+// Some common helpers
+
+/**
+ * This method does **NOT** close the input stream or check for input
+ * exhaustion. It is up to the user to handle that.
+ */
+public inline fun <T> InputStream.parse(parse: BinaryParseState.() -> T): T = initParse().parse()
+
+public inline fun <T> ByteArray.parse(
+    consumeAll: Boolean = true,
+    parse: BinaryParseState.() -> T,
+): T = ByteArrayInputStream(this).use {
+    val state = it.initParse()
+    val value = state.parse()
+    if (consumeAll && state.offset < size) state.crash("Unexpected: ${state.byte} (${state.offset} vs $size)")
+    value
+}
 
 public inline fun BinaryParseState.ensure(condition: Boolean, message: () -> String) {
     if (!condition) crash(message())
