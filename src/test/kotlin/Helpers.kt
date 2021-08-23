@@ -30,9 +30,9 @@ object IntSerializer : ValueSerializer<Int> {
     override fun Writer.serializeValue(value: Int) = write(value.toString())
 }
 
-object IntDeserializer : ValueDeserializer<Int> {
-    override fun TextParseState.deserializeValue() = captureWhile { it.isDigit() }.toInt()
+object IntDeserializer : ValueParser<Int> {
+    override fun TextParseState.parseValue() = captureWhile { it.isDigit() }.toInt()
 }
 
 fun serialize(deep: Deep<Int>): String = DeepSerializer.minified(IntSerializer).toString(deep)
-fun deserialize(string: String): Deep<Int> = StringReader(string).deserializeDeep(IntDeserializer)
+fun deserialize(string: String): Deep<Int> = StringReader(string).parseDeep(IntDeserializer)
