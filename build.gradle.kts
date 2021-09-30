@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation("ruckustboom:parse:0.1.0")
+    implementation("ruckustboom:serial:0.1.0")
     testImplementation(kotlin("test-junit5"))
 }
 

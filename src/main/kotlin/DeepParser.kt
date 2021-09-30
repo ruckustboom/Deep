@@ -1,6 +1,6 @@
 package deep
 
-import parse.*
+import serial.*
 import java.io.Reader
 
 public fun interface ValueParser<out T> {
