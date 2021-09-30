@@ -4,6 +4,18 @@ import parse.TextParseState
 import parse.readLiteral
 import java.io.Writer
 
+// String
+
+public object StringParser : ValueParser<String> {
+    override fun TextParseState.parseValue(): String = decodeStringLiteral()
+}
+
+public object StringSerializer : ValueSerializer<String> {
+    override fun Writer.serializeValue(value: String): Unit = encodeStringLiteral(value)
+}
+
+// Nullable
+
 public class NullableParser<T : Any>(
     private val parser: ValueParser<T>,
     private val nullValue: String = "null",
