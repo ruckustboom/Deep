@@ -1,7 +1,7 @@
 package deep
 
-import parse.TextParseState
-import parse.captureWhile
+import serial.TextParseState
+import serial.captureWhile
 import java.io.StringReader
 import java.io.Writer
 import kotlin.test.assertEquals

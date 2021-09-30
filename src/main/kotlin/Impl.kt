@@ -1,7 +1,7 @@
 package deep
 
-import parse.TextParseState
-import parse.readLiteral
+import serial.TextParseState
+import serial.readLiteral
 import java.io.Writer
 
 // String
