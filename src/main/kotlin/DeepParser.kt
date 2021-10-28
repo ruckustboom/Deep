@@ -12,7 +12,7 @@ public fun <T> Reader.parseDeep(parser: ValueParser<T>): Deep<T> = parse {
     return parseDeep(parser)
 }
 
-private fun <T> TextParseState.parseDeep(parser: ValueParser<T>): Deep<T> = when (char) {
+private fun <T> TextParseState.parseDeep(parser: ValueParser<T>): Deep<T> = when (current) {
     '{' -> parseMap(parser)
     '[' -> parseList(parser)
     else -> DeepValue(with(parser) { parseValue() })
@@ -52,17 +52,17 @@ private inline fun TextParseState.parseCollection(end: Char, action: () -> Unit)
 }
 
 public fun TextParseState.decodeStringLiteral(): String {
-    val delimiter = char
+    val delimiter = current
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     next()
     startCapture()
-    while (char != delimiter) {
-        ensure(char >= '\u0020') { "Invalid character" }
-        if (char == '\\') {
+    while (current != delimiter) {
+        ensure(current >= '\u0020') { "Invalid character" }
+        if (current == '\\') {
             pauseCapture()
             next()
             addToCapture(
-                when (char) {
+                when (current) {
                     'n' -> '\n'
                     'r' -> '\r'
                     't' -> '\t'
@@ -70,10 +70,10 @@ public fun TextParseState.decodeStringLiteral(): String {
                     'f' -> '\u000c'
                     'u' -> String(CharArray(4) {
                         next()
-                        ensure(char.isHexDigit()) { "Invalid hex digit" }
-                        char
+                        ensure(current.isHexDigit()) { "Invalid hex digit" }
+                        current
                     }).toInt(16).toChar()
-                    else -> char
+                    else -> current
                 }
             )
             next()
@@ -86,3 +86,5 @@ public fun TextParseState.decodeStringLiteral(): String {
     next()
     return string
 }
+
+public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'

@@ -89,7 +89,7 @@ public class DeepSerializer<T> private constructor(
     }
 }
 
-public inline fun <T> DeepSerializer<T>.toString(value: Deep<T>): String =
+public fun <T> DeepSerializer<T>.toString(value: Deep<T>): String =
     StringWriter().apply { use { serialize(value, it) } }.toString()
 
 private const val HEX_CHARS = "0123456789abcdef"

@@ -25,7 +25,7 @@ public class NullableParser<T : Any>(
     }
 
     override fun TextParseState.parseValue(): T? {
-        return if (char == nullValue[0]) {
+        return if (current == nullValue[0]) {
             readLiteral(nullValue)
             null
         } else with(parser) { parseValue() }
