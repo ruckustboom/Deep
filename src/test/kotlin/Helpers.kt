@@ -26,6 +26,10 @@ infix fun <T> Deep<T>.shouldBe(expected: Any?) {
     }
 }
 
+infix fun <T> List<T>.shouldBe(expected: List<T>) {
+    assertEquals(expected, this)
+}
+
 object IntSerializer : ValueSerializer<Int> {
     override fun Writer.serializeValue(value: Int) = write(value.toString())
 }
@@ -36,3 +40,17 @@ object IntDeserializer : ValueParser<Int> {
 
 fun serialize(deep: Deep<Int>): String = DeepSerializer.minified(IntSerializer).toString(deep)
 fun deserialize(string: String): Deep<Int> = StringReader(string).parseDeep(IntDeserializer)
+
+fun tokenize(string: String): List<DeepEvent<Int>> {
+    val tokenizer = Tokenizer<Int>()
+    StringReader(string).parseDeep(tokenizer, IntDeserializer)
+    return tokenizer.tokens
+}
+
+class Tokenizer<T> : DeepEvent.Handler<T> {
+    val tokens = mutableListOf<DeepEvent<T>>()
+
+    override fun handle(event: DeepEvent<T>) {
+        tokens += event
+    }
+}
