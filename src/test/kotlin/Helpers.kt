@@ -30,20 +30,20 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
     assertEquals(expected, this)
 }
 
-object IntSerializer : ValueSerializer<Int> {
-    override fun Writer.serializeValue(value: Int) = write(value.toString())
+object IntWriter : ValueWriter<Int> {
+    override fun Writer.writeValue(value: Int) = write(value.toString())
 }
 
-object IntDeserializer : ValueParser<Int> {
-    override fun TextParseState.parseValue() = captureWhile { it.isDigit() }.toInt()
+object IntReader : ValueReader<Int> {
+    override fun TextParseState.readValue() = captureWhile { it.isDigit() }.toInt()
 }
 
-fun serialize(deep: Deep<Int>): String = DeepSerializer.minified(IntSerializer).toString(deep)
-fun deserialize(string: String): Deep<Int> = StringReader(string).parseDeep(IntDeserializer)
+fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(IntWriter)
+fun readDeep(string: String): Deep<Int> = StringReader(string).readDeep(IntReader)
 
 fun tokenize(string: String): List<DeepEvent<Int>> {
     val tokenizer = Tokenizer<Int>()
-    StringReader(string).parseDeep(tokenizer, IntDeserializer)
+    StringReader(string).readDeep(tokenizer, IntReader)
     return tokenizer.tokens
 }
 

@@ -6,42 +6,40 @@ import java.io.Writer
 
 // String
 
-public object StringParser : ValueParser<String> {
-    override fun TextParseState.parseValue(): String = decodeStringLiteral()
+public object StringReader : ValueReader<String> {
+    override fun TextParseState.readValue(): String = decodeStringLiteral()
 }
 
-public object StringSerializer : ValueSerializer<String> {
-    override fun Writer.serializeValue(value: String): Unit = encodeStringLiteral(value)
+public object StringWriter : ValueWriter<String> {
+    override fun Writer.writeValue(value: String): Unit = encodeStringLiteral(value)
 }
 
 // Nullable
 
-public class NullableParser<T : Any>(
-    private val parser: ValueParser<T>,
+public class NullableReader<T : Any>(
+    private val parser: ValueReader<T>,
     private val nullValue: String = "null",
-) : ValueParser<T?> {
+) : ValueReader<T?> {
     init {
         require(nullValue.isNotEmpty())
     }
 
-    override fun TextParseState.parseValue(): T? {
-        return if (current == nullValue[0]) {
-            readLiteral(nullValue)
-            null
-        } else with(parser) { parseValue() }
-    }
+    override fun TextParseState.readValue(): T? = if (current == nullValue[0]) {
+        readLiteral(nullValue)
+        null
+    } else with(parser) { readValue() }
 }
 
-public class NullableSerializer<T : Any>(
-    private val serializer: ValueSerializer<T>,
+public class NullableWriter<T : Any>(
+    private val serializer: ValueWriter<T>,
     private val nullValue: String = "null",
-) : ValueSerializer<T?> {
+) : ValueWriter<T?> {
     init {
         require(nullValue.isNotEmpty())
     }
 
-    override fun Writer.serializeValue(value: T?) {
+    override fun Writer.writeValue(value: T?) {
         if (value == null) write(nullValue)
-        else with(serializer) { serializeValue(value) }
+        else with(serializer) { writeValue(value) }
     }
 }
