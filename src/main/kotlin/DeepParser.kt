@@ -38,13 +38,11 @@ private fun <T> TextParseState.parseList(parser: ValueParser<T>): DeepList<T> {
     return DeepList(list)
 }
 
-// TODO: Allow trailing commas
 private inline fun TextParseState.parseCollection(end: Char, action: () -> Unit) {
     next()
-    skipWhitespace()
-    if (readOptionalChar(end)) return
     do {
         skipWhitespace()
+        if (readOptionalChar(end)) return
         action()
         skipWhitespace()
     } while (readOptionalChar(','))

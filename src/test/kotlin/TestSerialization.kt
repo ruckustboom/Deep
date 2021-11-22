@@ -23,6 +23,8 @@ class TestSerialization {
     fun testDeserialize() {
         deserialize("5") shouldBe 5
         deserialize("[5, 6]") shouldBe listOf(5, 6)
+        deserialize("[5, 6 , ]") shouldBe listOf(5, 6)
         deserialize("""{"five": 5, "rem": [6, 404]}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
+        deserialize("""{"five": 5, "rem": [6, 404,],}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
     }
 }
