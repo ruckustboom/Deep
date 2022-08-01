@@ -112,6 +112,7 @@ public fun TextParseState.decodeStringLiteral(): String {
         }
     }
     val string = finishCapture()
+    ensure(current == delimiter) { "Expected: $delimiter" }
     next()
     return string
 }
