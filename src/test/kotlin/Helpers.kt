@@ -1,6 +1,6 @@
 package deep
 
-import serial.TextParseState
+import serial.TextCursor
 import serial.captureWhile
 import java.io.StringReader
 import java.io.Writer
@@ -30,20 +30,14 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
     assertEquals(expected, this)
 }
 
-object IntWriter : ValueWriter<Int> {
-    override fun Writer.writeValue(value: Int) = write(value.toString())
-}
-
-object IntReader : ValueReader<Int> {
-    override fun TextParseState.readValue() = captureWhile { it.isDigit() }.toInt()
-}
-
-fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(IntWriter)
-fun readDeep(string: String): Deep<Int> = StringReader(string).readDeep(IntReader)
+private val writeInt: Writer.(Int) -> Unit = { write(it.toString()) }
+private val readInt: TextCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
+fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
+fun readDeep(string: String) = StringReader(string).readDeep(readInt)
 
 fun tokenize(string: String): List<DeepEvent<Int>> {
     val tokenizer = Tokenizer<Int>()
-    StringReader(string).readDeep(tokenizer, IntReader)
+    StringReader(string).readDeep(tokenizer, readInt)
     return tokenizer.tokens
 }
 
