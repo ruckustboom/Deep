@@ -1,6 +1,6 @@
 package deep
 
-import serial.TextCursor
+import serial.CharCursor
 import serial.captureWhile
 import java.io.StringReader
 import java.io.Writer
@@ -31,7 +31,7 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
 }
 
 private val writeInt: Writer.(Int) -> Unit = { write(it.toString()) }
-private val readInt: TextCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
+private val readInt: CharCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
 fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
 fun readDeep(string: String) = StringReader(string).readDeep(readInt)
 

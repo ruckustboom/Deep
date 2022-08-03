@@ -7,12 +7,12 @@ import java.io.Writer
 
 // Read API
 
-public fun <T> Reader.readDeep(handler: DeepEvent.Handler<T>, read: TextCursor.() -> T): Unit = parse {
+public fun <T> Reader.readDeep(handler: DeepEvent.Handler<T>, read: CharCursor.() -> T): Unit = parse {
     skipWhitespace()
     readDeep(handler, read)
 }
 
-public fun <T> Reader.readDeep(read: TextCursor.() -> T): Deep<T> {
+public fun <T> Reader.readDeep(read: CharCursor.() -> T): Deep<T> {
     val handler = DefaultHandler<T>()
     readDeep(handler, read)
     return handler.value ?: error("Expected end of input")
@@ -41,14 +41,14 @@ public fun <T> Deep<T>.toStringMinified(write: Writer.(T) -> Unit): String =
 
 // Read Helpers
 
-private fun <T> TextCursor.readDeep(handler: DeepEvent.Handler<T>, read: TextCursor.() -> T): Unit =
+private fun <T> CharCursor.readDeep(handler: DeepEvent.Handler<T>, read: CharCursor.() -> T): Unit =
     when (current) {
         '{' -> readMap(handler, read)
         '[' -> readList(handler, read)
         else -> readValue(handler, read)
     }
 
-private fun <T> TextCursor.readMap(handler: DeepEvent.Handler<T>, read: TextCursor.() -> T) {
+private fun <T> CharCursor.readMap(handler: DeepEvent.Handler<T>, read: CharCursor.() -> T) {
     handler.handle(DeepEvent.MapStart)
     readCollection('}') {
         val key = decodeStringLiteral()
@@ -61,7 +61,7 @@ private fun <T> TextCursor.readMap(handler: DeepEvent.Handler<T>, read: TextCurs
     handler.handle(DeepEvent.MapEnd)
 }
 
-private fun <T> TextCursor.readList(handler: DeepEvent.Handler<T>, read: TextCursor.() -> T) {
+private fun <T> CharCursor.readList(handler: DeepEvent.Handler<T>, read: CharCursor.() -> T) {
     handler.handle(DeepEvent.ListStart)
     readCollection(']') {
         readDeep(handler, read)
@@ -69,11 +69,11 @@ private fun <T> TextCursor.readList(handler: DeepEvent.Handler<T>, read: TextCur
     handler.handle(DeepEvent.ListEnd)
 }
 
-private fun <T> TextCursor.readValue(handler: DeepEvent.Handler<T>, read: TextCursor.() -> T) {
+private fun <T> CharCursor.readValue(handler: DeepEvent.Handler<T>, read: CharCursor.() -> T) {
     handler.handle(DeepEvent.Value(read()))
 }
 
-public fun TextCursor.decodeStringLiteral(): String {
+public fun CharCursor.decodeStringLiteral(): String {
     val delimiter = current
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     next()
@@ -113,7 +113,7 @@ public fun TextCursor.decodeStringLiteral(): String {
 
 public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
-private inline fun TextCursor.readCollection(end: Char, action: () -> Unit) {
+private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
     next()
     do {
         skipWhitespace()
