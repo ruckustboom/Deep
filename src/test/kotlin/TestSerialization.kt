@@ -15,6 +15,7 @@ class TestSerialization {
                 "rem" to list(value(6), value(404)),
             )),
         )
+        assertEquals("""{"\u0001":5}""", writeDeep(map("\u0001" to value(5))))
     }
 
     @Test
@@ -63,5 +64,7 @@ class TestSerialization {
         readDeep("[   5   ,   6   ,   ]") shouldBe listOf(5, 6)
         readDeep("""{"five": 5, "rem": [6, 404]}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
         readDeep("""{"five": 5, "rem": [6, 404,],}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
+        readDeep("""{"\u0001": 5}""") shouldBe mapOf("\u0001" to 5)
+        readDeep("""{"\u0041": 5}""") shouldBe mapOf("A" to 5)
     }
 }
