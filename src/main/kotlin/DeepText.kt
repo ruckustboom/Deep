@@ -84,34 +84,35 @@ public fun TextParseState.decodeStringLiteral(): String {
     val delimiter = current
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     next()
-    startCapture()
-    while (current != delimiter) {
-        ensure(current >= '\u0020') { "Invalid character" }
-        if (current == '\\') {
-            pauseCapture()
-            next()
-            addToCapture(
-                when (current) {
-                    'n' -> '\n'
-                    'r' -> '\r'
-                    't' -> '\t'
-                    'b' -> '\b'
-                    'f' -> '\u000c'
-                    'u' -> String(CharArray(4) {
-                        next()
-                        ensure(current.isHexDigit()) { "Invalid hex digit" }
-                        current
-                    }).toInt(16).toChar()
-                    else -> current
+    val string = capturing {
+        while (current != delimiter) {
+            ensure(current >= '\u0020') { "Invalid character" }
+            if (current == '\\') {
+                notCapturing {
+                    next()
+                    capture(
+                        when (current) {
+                            'n' -> '\n'
+                            'r' -> '\r'
+                            't' -> '\t'
+                            'b' -> '\b'
+                            'f' -> '\u000c'
+                            'u' -> String(CharArray(4) {
+                                next()
+                                ensure(current.isHexDigit()) { "Invalid hex digit" }
+                                current
+                            }).toInt(16).toChar()
+
+                            else -> current
+                        }
+                    )
+                    next()
                 }
-            )
-            next()
-            startCapture()
-        } else {
-            next()
+            } else {
+                next()
+            }
         }
     }
-    val string = finishCapture()
     ensure(current == delimiter) { "Expected: $delimiter" }
     next()
     return string
