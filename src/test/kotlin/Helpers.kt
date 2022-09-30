@@ -33,11 +33,11 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
 private val writeInt: Writer.(Int) -> Unit = { write(it.toString()) }
 private val readInt: CharCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
 fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
-fun readDeep(string: String) = StringReader(string).readDeep(readInt)
+fun parseDeep(string: String) = StringReader(string).parseDeep(readInt)
 
 fun tokenize(string: String): List<DeepEvent<Int>> {
     val tokenizer = Tokenizer<Int>()
-    StringReader(string).readDeep(tokenizer, readInt)
+    StringReader(string).parseDeep(tokenizer, readInt)
     return tokenizer.tokens
 }
 
