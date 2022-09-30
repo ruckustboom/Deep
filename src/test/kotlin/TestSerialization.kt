@@ -59,12 +59,12 @@ class TestSerialization {
 
     @Test
     fun testDeserialize() {
-        readDeep("5") shouldBe 5
-        readDeep("[5, 6]") shouldBe listOf(5, 6)
-        readDeep("[   5   ,   6   ,   ]") shouldBe listOf(5, 6)
-        readDeep("""{"five": 5, "rem": [6, 404]}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
-        readDeep("""{"five": 5, "rem": [6, 404,],}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
-        readDeep("""{"\u0001": 5}""") shouldBe mapOf("\u0001" to 5)
-        readDeep("""{"\u0041": 5}""") shouldBe mapOf("A" to 5)
+        parseDeep("5") shouldBe 5
+        parseDeep("[5, 6]") shouldBe listOf(5, 6)
+        parseDeep("[   5   ,   6   ,   ]") shouldBe listOf(5, 6)
+        parseDeep("""{"five": 5, "rem": [6, 404]}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
+        parseDeep("""{"five": 5, "rem": [6, 404,],}""") shouldBe mapOf("five" to 5, "rem" to listOf(6, 404))
+        parseDeep("""{"\u0001": 5}""") shouldBe mapOf("\u0001" to 5)
+        parseDeep("""{"\u0041": 5}""") shouldBe mapOf("A" to 5)
     }
 }

@@ -7,14 +7,14 @@ import java.io.Writer
 
 // Read API
 
-public fun <T> Reader.readDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
+public fun <T> Reader.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
     skipWhitespace()
     readDeep(handler, readValue)
 }
 
-public fun <T> Reader.readDeep(readValue: CharCursor.() -> T): Deep<T> {
+public fun <T> Reader.parseDeep(readValue: CharCursor.() -> T): Deep<T> {
     val handler = DefaultHandler<T>()
-    readDeep(handler, readValue)
+    parseDeep(handler, readValue)
     return handler.value ?: error("Expected end of input")
 }
 
