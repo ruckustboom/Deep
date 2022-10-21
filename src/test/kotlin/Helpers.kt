@@ -2,8 +2,6 @@ package deep
 
 import serial.CharCursor
 import serial.captureWhile
-import java.io.StringReader
-import java.io.Writer
 import kotlin.test.assertEquals
 
 fun <T> value(value: T) = DeepValue(value)
@@ -17,11 +15,13 @@ infix fun <T> Deep<T>.shouldBe(expected: Any?) {
             assertEquals(expected.keys, data.keys)
             data.forEach { (key, value) -> value shouldBe expected[key] }
         }
+
         is DeepList -> {
             expected as List<*>
             assertEquals(expected.size, data.size)
             data.forEachIndexed { index, value -> value shouldBe expected[index] }
         }
+
         is DeepValue -> assertEquals(expected, data)
     }
 }
@@ -30,14 +30,14 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
     assertEquals(expected, this)
 }
 
-private val writeInt: Writer.(Int) -> Unit = { write(it.toString()) }
+private val writeInt: Appendable.(Int) -> Unit = { append(it.toString()) }
 private val readInt: CharCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
 fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
-fun parseDeep(string: String) = StringReader(string).parseDeep(readInt)
+fun parseDeep(string: String) = string.parseDeep(readInt)
 
 fun tokenize(string: String): List<DeepEvent<Int>> {
     val tokenizer = Tokenizer<Int>()
-    StringReader(string).parseDeep(tokenizer, readInt)
+    string.parseDeep(tokenizer, readInt)
     return tokenizer.tokens
 }
 

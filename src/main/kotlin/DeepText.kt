@@ -2,8 +2,6 @@ package deep
 
 import serial.*
 import java.io.Reader
-import java.io.StringWriter
-import java.io.Writer
 
 // Read API
 
@@ -18,25 +16,36 @@ public fun <T> Reader.parseDeep(readValue: CharCursor.() -> T): Deep<T> {
     return handler.value ?: error("Expected end of input")
 }
 
+public fun <T> String.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
+    skipWhitespace()
+    readDeep(handler, readValue)
+}
+
+public fun <T> String.parseDeep(readValue: CharCursor.() -> T): Deep<T> {
+    val handler = DefaultHandler<T>()
+    parseDeep(handler, readValue)
+    return handler.value ?: error("Expected end of input")
+}
+
 // Write API
 
-public fun <T> Writer.writeDeep(value: Deep<T>, writeValue: Writer.(T) -> Unit): Unit =
+public fun <T> Appendable.writeDeep(value: Deep<T>, writeValue: Appendable.(T) -> Unit): Unit =
     writeDeep(value, "  ", 0, writeValue)
 
-public fun <T> Writer.writeDeepMinified(value: Deep<T>, writeValue: Writer.(T) -> Unit): Unit =
+public fun <T> Appendable.writeDeepMinified(value: Deep<T>, writeValue: Appendable.(T) -> Unit): Unit =
     writeDeep(value, null, 0, writeValue)
 
-public fun <T> Writer.writeDeep(value: Deep<T>, indent: String, writeValue: Writer.(T) -> Unit): Unit =
+public fun <T> Appendable.writeDeep(value: Deep<T>, indent: String, writeValue: Appendable.(T) -> Unit): Unit =
     writeDeep(value, indent, 0, writeValue)
 
-public fun <T> Deep<T>.toString(writeValue: Writer.(T) -> Unit): String =
-    StringWriter().apply { use { it.writeDeep(this@toString, writeValue) } }.toString()
+public fun <T> Deep<T>.toString(writeValue: Appendable.(T) -> Unit): String =
+    buildString { writeDeep(this@toString, writeValue) }
 
-public fun <T> Deep<T>.toString(indent: String, writeValue: Writer.(T) -> Unit): String =
-    StringWriter().apply { use { it.writeDeep(this@toString, indent, writeValue) } }.toString()
+public fun <T> Deep<T>.toString(indent: String, writeValue: Appendable.(T) -> Unit): String =
+    buildString { writeDeep(this@toString, indent, writeValue) }
 
-public fun <T> Deep<T>.toStringMinified(writeValue: Writer.(T) -> Unit): String =
-    StringWriter().apply { use { it.writeDeepMinified(this@toStringMinified, writeValue) } }.toString()
+public fun <T> Deep<T>.toStringMinified(writeValue: Appendable.(T) -> Unit): String =
+    buildString { writeDeepMinified(this@toStringMinified, writeValue) }
 
 
 // Read Helpers
@@ -125,7 +134,7 @@ private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
 
 // Write Helpers
 
-private fun <T> Writer.writeDeep(value: Deep<T>, indent: String?, level: Int, writeValue: Writer.(T) -> Unit) {
+private fun <T> Appendable.writeDeep(value: Deep<T>, indent: String?, level: Int, writeValue: Appendable.(T) -> Unit) {
     when (value) {
         is DeepMap -> writeMap(value.data, indent, level, writeValue)
         is DeepList -> writeList(value.data, indent, level, writeValue)
@@ -133,11 +142,11 @@ private fun <T> Writer.writeDeep(value: Deep<T>, indent: String?, level: Int, wr
     }
 }
 
-private fun <T> Writer.writeMap(
+private fun <T> Appendable.writeMap(
     map: Map<String, Deep<T>>,
     indent: String?,
     level: Int,
-    writeValue: Writer.(T) -> Unit,
+    writeValue: Appendable.(T) -> Unit,
 ) {
     append('{')
     when (map.size) {
@@ -156,11 +165,11 @@ private fun <T> Writer.writeMap(
     append('}')
 }
 
-private fun <T> Writer.writeList(
+private fun <T> Appendable.writeList(
     list: List<Deep<T>>,
     indent: String?,
     level: Int,
-    writeValue: Writer.(T) -> Unit,
+    writeValue: Appendable.(T) -> Unit,
 ) {
     append('[')
     when (list.size) {
@@ -180,13 +189,13 @@ private fun <T> Writer.writeList(
     append(']')
 }
 
-private fun <T> Writer.writeValue(value: T, writeValue: Writer.(T) -> Unit) = writeValue(value)
+private fun <T> Appendable.writeValue(value: T, writeValue: Appendable.(T) -> Unit) = writeValue(value)
 
-private fun <T> Writer.writeEntry(
+private fun <T> Appendable.writeEntry(
     entry: Map.Entry<String, Deep<T>>,
     indent: String?,
     level: Int,
-    writeValue: Writer.(T) -> Unit,
+    writeValue: Appendable.(T) -> Unit,
 ) {
     encodeStringLiteral(entry.key)
     append(':')
@@ -194,25 +203,25 @@ private fun <T> Writer.writeEntry(
     writeDeep(entry.value, indent, level, writeValue)
 }
 
-private fun Writer.appendLineAndIndent(indent: String?, level: Int) {
+private fun Appendable.appendLineAndIndent(indent: String?, level: Int) {
     if (indent != null) {
         appendLine()
-        repeat(level) { write(indent) }
+        repeat(level) { append(indent) }
     }
 }
 
 private const val HEX_CHARS = "0123456789abcdef"
-public fun Writer.encodeStringLiteral(string: String) {
+public fun Appendable.encodeStringLiteral(string: String) {
     append('"')
     for (char in string) {
         when {
-            char == '\\' -> write("\\\\")
-            char == '"' -> write("\\\"")
-            char == '\n' -> write("\\n")
-            char == '\r' -> write("\\r")
-            char == '\t' -> write("\\t")
+            char == '\\' -> append("\\\\")
+            char == '"' -> append("\\\"")
+            char == '\n' -> append("\\n")
+            char == '\r' -> append("\\r")
+            char == '\t' -> append("\\t")
             char < '\u0020' -> {
-                write("\\u00")
+                append("\\u00")
                 val code = char.code
                 append(HEX_CHARS[code shr 4 and 0xf])
                 append(HEX_CHARS[code and 0xf])
