@@ -92,7 +92,7 @@ public fun CharCursor.decodeStringLiteral(): String {
             ensure(current >= '\u0020') { "Invalid character" }
             if (current == '\\') {
                 notCapturing {
-                    next()
+                    advance()
                     this@capturing.capture(
                         when (current) {
                             'n' -> '\n'
@@ -101,7 +101,7 @@ public fun CharCursor.decodeStringLiteral(): String {
                             'b' -> '\b'
                             'f' -> '\u000c'
                             'u' -> String(CharArray(4) {
-                                next()
+                                advance()
                                 ensure(current.isHexDigit()) { "Invalid hex digit" }
                                 current
                             }).toInt(16).toChar()
@@ -109,10 +109,10 @@ public fun CharCursor.decodeStringLiteral(): String {
                             else -> current
                         }
                     )
-                    next()
+                    advance()
                 }
             } else {
-                next()
+                advance()
             }
         }
     }
