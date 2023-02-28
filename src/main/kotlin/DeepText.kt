@@ -50,18 +50,20 @@ public fun <T> Deep<T>.toStringMinified(writeValue: Appendable.(T) -> Unit): Str
 
 // Read Helpers
 
-private fun <T> CharCursor.readDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit =
-    when (current) {
-        '{' -> readMap(handler, readValue)
-        '[' -> readList(handler, readValue)
-        else -> readValue(handler, readValue)
-    }
+private fun <T> CharCursor.readDeep(
+    handler: DeepEvent.Handler<T>,
+    readValue: CharCursor.() -> T,
+): Unit = when (current) {
+    '{' -> readMap(handler, readValue)
+    '[' -> readList(handler, readValue)
+    else -> readValue(handler, readValue)
+}
 
 private fun <T> CharCursor.readMap(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T) {
     handler.handle(DeepEvent.MapStart)
     readRequiredChar('{')
     readCollection('}') {
-        val key = decodeStringLiteral()
+        val key = readEncodedString()
         handler.handle(DeepEvent.Key(key))
         skipWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
@@ -84,7 +86,7 @@ private fun <T> CharCursor.readValue(handler: DeepEvent.Handler<T>, readValue: C
     handler.handle(DeepEvent.Value(readValue()))
 }
 
-public fun CharCursor.decodeStringLiteral(): String {
+public fun CharCursor.readEncodedString(): String {
     val delimiter = read()
     ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
     val string = capturing {
@@ -134,12 +136,15 @@ private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
 
 // Write Helpers
 
-private fun <T> Appendable.writeDeep(value: Deep<T>, indent: String?, level: Int, writeValue: Appendable.(T) -> Unit) {
-    when (value) {
-        is DeepMap -> writeMap(value.data, indent, level, writeValue)
-        is DeepList -> writeList(value.data, indent, level, writeValue)
-        is DeepValue -> writeValue(value.data, writeValue)
-    }
+private fun <T> Appendable.writeDeep(
+    value: Deep<T>,
+    indent: String?,
+    level: Int,
+    writeValue: Appendable.(T) -> Unit,
+) = when (value) {
+    is DeepMap -> writeMap(value.data, indent, level, writeValue)
+    is DeepList -> writeList(value.data, indent, level, writeValue)
+    is DeepValue -> writeValue(value.data, writeValue)
 }
 
 private fun <T> Appendable.writeMap(
@@ -197,7 +202,7 @@ private fun <T> Appendable.writeEntry(
     level: Int,
     writeValue: Appendable.(T) -> Unit,
 ) {
-    encodeStringLiteral(entry.key)
+    writeEncodedString(entry.key)
     append(':')
     if (indent != null) append(' ')
     writeDeep(entry.value, indent, level, writeValue)
@@ -211,7 +216,7 @@ private fun Appendable.appendLineAndIndent(indent: String?, level: Int) {
 }
 
 private const val HEX_CHARS = "0123456789abcdef"
-public fun Appendable.encodeStringLiteral(string: String) {
+public fun Appendable.writeEncodedString(string: String) {
     append('"')
     for (char in string) {
         when {

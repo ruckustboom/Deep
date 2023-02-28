@@ -41,10 +41,16 @@ public class DeepValue<out T>(public val data: T) : Deep<T>() {
 
 // Common Helpers
 
-public fun <T, R> Deep<T>.map(convert: (T) -> Deep<R>): Deep<R> = when(this) {
+public fun <T, R> Deep<T>.map(convert: (T) -> R): Deep<R> = when(this) {
     is DeepMap -> DeepMap(data.mapValues { (_, it) -> it.map(convert) })
     is DeepList -> DeepList(data.map { it.map(convert) })
+    is DeepValue -> DeepValue(convert(data))
+}
+
+public fun <T, R> Deep<T>.flatMap(convert: (T) -> Deep<R>): Deep<R> = when(this) {
+    is DeepMap -> DeepMap(data.mapValues { (_, it) -> it.flatMap(convert) })
+    is DeepList -> DeepList(data.map { it.flatMap(convert) })
     is DeepValue -> convert(data)
 }
 
-public fun <T> Deep<Deep<T>>.flatten(): Deep<T> = map { it }
+public fun <T> Deep<Deep<T>>.flatten(): Deep<T> = flatMap { it }
