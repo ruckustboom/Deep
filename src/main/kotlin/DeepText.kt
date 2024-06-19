@@ -6,7 +6,7 @@ import java.io.Reader
 // Read API
 
 public fun <T> Reader.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
-    skipWhitespace()
+    consumeWhitespace()
     readDeep(handler, readValue)
 }
 
@@ -17,7 +17,7 @@ public fun <T> Reader.parseDeep(readValue: CharCursor.() -> T): Deep<T> {
 }
 
 public fun <T> String.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
-    skipWhitespace()
+    consumeWhitespace()
     readDeep(handler, readValue)
 }
 
@@ -65,9 +65,9 @@ private fun <T> CharCursor.readMap(handler: DeepEvent.Handler<T>, readValue: Cha
     readCollection('}') {
         val key = readEncodedString()
         handler.handle(DeepEvent.Key(key))
-        skipWhitespace()
+        consumeWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
-        skipWhitespace()
+        consumeWhitespace()
         readDeep(handler, readValue)
     }
     handler.handle(DeepEvent.MapEnd)
@@ -126,10 +126,10 @@ public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || 
 
 private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
     do {
-        skipWhitespace()
+        consumeWhitespace()
         if (readOptionalChar(end)) return
         action()
-        skipWhitespace()
+        consumeWhitespace()
     } while (readOptionalChar(','))
     readRequiredChar(end)
 }
