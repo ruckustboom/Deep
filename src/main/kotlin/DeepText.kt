@@ -63,7 +63,8 @@ private fun <T> CharCursor.readMap(handler: DeepEvent.Handler<T>, readValue: Cha
     handler.handle(DeepEvent.MapStart)
     readRequiredChar('{')
     readCollection('}') {
-        val key = readEncodedString()
+        ensure(current == '"' || current == '\'') { "Expected \" or '" }
+        val key = captureStringLiteral(current)
         handler.handle(DeepEvent.Key(key))
         consumeWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
@@ -85,44 +86,6 @@ private fun <T> CharCursor.readList(handler: DeepEvent.Handler<T>, readValue: Ch
 private fun <T> CharCursor.readValue(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T) {
     handler.handle(DeepEvent.Value(readValue()))
 }
-
-public fun CharCursor.readEncodedString(): String {
-    val delimiter = read()
-    ensure(delimiter == '"' || delimiter == '\'') { "Expected: \" or '" }
-    val string = capturing {
-        while (current != delimiter) {
-            ensure(current >= '\u0020') { "Invalid character" }
-            if (current == '\\') {
-                notCapturing {
-                    advance()
-                    this@capturing.capture(
-                        when (current) {
-                            'n' -> '\n'
-                            'r' -> '\r'
-                            't' -> '\t'
-                            'b' -> '\b'
-                            'f' -> '\u000c'
-                            'u' -> String(CharArray(4) {
-                                advance()
-                                ensure(current.isHexDigit()) { "Invalid hex digit" }
-                                current
-                            }).toInt(16).toChar()
-
-                            else -> current
-                        }
-                    )
-                    advance()
-                }
-            } else {
-                advance()
-            }
-        }
-    }
-    readRequiredChar(delimiter)
-    return string
-}
-
-public fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
 private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
     do {
