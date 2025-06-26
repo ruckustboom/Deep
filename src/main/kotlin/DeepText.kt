@@ -6,7 +6,7 @@ import java.io.Reader
 // Read API
 
 public fun <T> Reader.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
-    consumeWhitespace()
+    readWhileWhitespace()
     readDeep(handler, readValue)
 }
 
@@ -17,7 +17,7 @@ public fun <T> Reader.parseDeep(readValue: CharCursor.() -> T): Deep<T> {
 }
 
 public fun <T> String.parseDeep(handler: DeepEvent.Handler<T>, readValue: CharCursor.() -> T): Unit = parse {
-    consumeWhitespace()
+    readWhileWhitespace()
     readDeep(handler, readValue)
 }
 
@@ -66,9 +66,9 @@ private fun <T> CharCursor.readMap(handler: DeepEvent.Handler<T>, readValue: Cha
         ensure(current == '"' || current == '\'') { "Expected \" or '" }
         val key = captureStringLiteral(current)
         handler.handle(DeepEvent.Key(key))
-        consumeWhitespace()
+        readWhileWhitespace()
         if (!readOptionalChar(':')) readRequiredChar('=')
-        consumeWhitespace()
+        readWhileWhitespace()
         readDeep(handler, readValue)
     }
     handler.handle(DeepEvent.MapEnd)
@@ -89,10 +89,10 @@ private fun <T> CharCursor.readValue(handler: DeepEvent.Handler<T>, readValue: C
 
 private inline fun CharCursor.readCollection(end: Char, action: () -> Unit) {
     do {
-        consumeWhitespace()
+        readWhileWhitespace()
         if (readOptionalChar(end)) return
         action()
-        consumeWhitespace()
+        readWhileWhitespace()
     } while (readOptionalChar(','))
     readRequiredChar(end)
 }
