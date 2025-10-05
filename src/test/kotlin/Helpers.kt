@@ -1,5 +1,7 @@
 package deep
 
+import deep.common.readNullable
+import deep.common.writeNullable
 import serial.CharCursor
 import serial.captureWhile
 import kotlin.test.assertEquals
@@ -32,10 +34,18 @@ infix fun <T> List<T>.shouldBe(expected: List<T>) {
 
 private val writeInt: Appendable.(Int) -> Unit = { append(it.toString()) }
 private val readInt: CharCursor.() -> Int = { captureWhile { it.isDigit() }.toInt() }
-fun writeDeep(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
-fun parseDeep(string: String) = string.parseDeep(readInt)
+fun writeDeepInt(deep: Deep<Int>): String = deep.toStringMinified(writeInt)
+fun parseDeepInt(string: String) = string.parseDeep(readInt)
 
-fun tokenize(string: String): List<DeepEvent<Int>> {
+fun writeDeepIntNullable(deep: Deep<Int?>): String = deep.toStringMinified {
+    writeNullable(it, writeValue = writeInt)
+}
+
+fun parseDeepIntNullable(string: String) = string.parseDeep {
+    readNullable(readValue = readInt)
+}
+
+fun tokenizeInt(string: String): List<DeepEvent<Int>> {
     val tokenizer = Tokenizer<Int>()
     string.parseDeep(tokenizer, readInt)
     return tokenizer.tokens
